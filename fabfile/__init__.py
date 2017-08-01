@@ -19,13 +19,19 @@ def git_pull():
             run("git pull origin master")
     
 @task
-def run_test_pipeline():
+def run_kishore_pipeline():
     with settings(user=env.user):
         with cd(env.questmon_folder):
-            run("module load python/ActivePython-3.2 ; python3.2 run_test_pipeline.py")
+            run("module load python/anaconda3.6 ; python3.6 run_kishore_pipeline.py")
+
+@task
+def run_test_pipeline36():
+    with settings(user=env.user):
+        with cd(env.questmon_folder):
+            run("module load python/anaconda3.6 ; python3.6 run_test_pipeline.py")
 
 @task
 def checkjobs():
     with settings(user=env.user):
         with cd(env.questmon_folder):
-            run("module load python/ActivePython-3.2 ; python3.2 checkjobs.py")
+            run("module load python/anaconda3.6 ; python3.6 checkjobs.py")
