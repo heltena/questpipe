@@ -4,7 +4,8 @@ from os.path import expanduser
 
 arguments = Arguments(
     msub_arguments=[
-        "-A b1038",
+        "-A b1042",
+        "-q pulrseq",
         "-l walltime=24:00:00,nodes=1:ppn=8",
         "-m a",
         "-j oe",
