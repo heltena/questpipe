@@ -52,7 +52,7 @@ t1.async_run("""
 step3_tasks = []
 sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 ssr = SampleSheetLoader(sample_sheet_filename)
-for index, data in enumerate(ssr.data)[0:2]:
+for index, data in enumerate(ssr.data[0:2]):
     if data["Sample_Project"] == arguments.values["project_id"]:
         for line in [1, 2, 3, 4]:
             filename = "{}_S{}_L{:04}_R1_001".format(data["Sample_Name"], index+1, line)
