@@ -17,27 +17,21 @@ arguments = Arguments(
 )
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
-
-t0 = pipeline.create_job(name="createdir")
-t0.async_run("""
-mkdir -p 01_fastq
-mkdir 02_fastqc
-mkdir 03_fastqc_trimmed
-mkdir 04_alignment
-mkdir 05_quantify
-""")
+# directories created 
 
 t1 = pipeline.create_job(name="fastqc")
-t1.async_run
-    fastqc  -o 01_fastqc 
+t1.async_run("""
+    fastqc {input_fastq.gz file} -o ~/01_fastqc 
     """)
 
 #t2 = pipeline.create_job(name="trimming")
+# if required the new trimmomatic tools can be adopted 
 #t2.async_run("""
-
- #   Java -jar Trimmomatic -----
-#    echo {job_name} >> helio001
-#    """)
+   module load java
+   java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads <numprocessors> -phred33 <fastqfile/location> <fastqfile/rename/ifrequired>
+   TRAILING:30 MINLEN:20
+   gzip <location/of/fastqfile>
+    """)
 #t3 = pipeline.create_job(name="fastqc_post")
 #t3.async_run("""
 #    sleep 10
