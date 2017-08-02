@@ -28,7 +28,7 @@ arguments = Arguments(
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
 
-t0 = pipeline.craete_job(name="create_folders")
+t0 = pipeline.create_job(name="create_folders")
 t0.async_run("""
     mkdir -p "{basedir}/{run_name}"
     mkdir -p "{basedir}/{run_name}/0_fastq"
