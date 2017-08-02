@@ -47,14 +47,22 @@ t1.async_run("""
 
 sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 
-commands = []
+sample_filenames = []
+
 ssr = SampleSheetLoader(sample_sheet_filename)
-for data in ssr.data:
+for index, data in enumerate(ssr.data):
     if data["Sample_Project"] == arguments.values["project_id"]:
-        files_to_copy = "cp {}{}/*.fastq.gz {}".format(
-            "{basedir}/Data/Intensities/BaseCalls/{project_id}/", data["Sample_ID"],
-            "{basedir}/{run_name}/00_fastq")
-        commands.append(files_to_copy)
+        for line in [1, 2, 3, 4]:
+            filename = "{}_S{}_L{:04}_R1_001.fastq.gz".format(data["Sample_Name"], index+1, line)
+            sample_filenames.append(filename)
+
+commands = []
+for sample_filename in sample_filenames:
+    command = "echo cp {}/{} {}".format(
+        "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
+        sample_filename,
+        "{basedir}/{run_name}/00_fastq")
+    commands.append(files_to_copy)
 
 t2 = pipeline.create_job(name="copy_fastq", dependences=[t1])
 t2.async_run("\n".join(commands))
