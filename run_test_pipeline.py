@@ -50,7 +50,7 @@ sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 commands = []
 ssr = SampleSheetLoader(sample_sheet_filename)
 for data in ssr.data:
-    if data["Sample_Project"] == arguments["project_id"]:
+    if data["Sample_Project"] == arguments.values["project_id"]:
         filenames = "{}/*.fastq".format(data["Sample_ID"])
         files_to_copy = "echo {}{}/*.fastq {}".format(
             "{basedir}/Data/Intensities/BaseCalls/{project_id}/", filenames,
