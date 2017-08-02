@@ -50,6 +50,7 @@ t1.async_run("""
 
 # STEP 3: Create the fastqc files from fastq
 step3_tasks = []
+sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data)[0:2]:
     if data["Sample_Project"] == arguments.values["project_id"]:
