@@ -77,7 +77,8 @@ class MJob:
     def async_run(self, command):
         if self.status != MJobStatus.CREATED:
             raise Exception("MJob is running")
-        self.command = self.__parse_string(command)
+        self.command = command
+        eff_command = self.__parse_string(command)
         eff_msub_arguments = [self.__parse_string(arg) for arg in self.msub_arguments]
         if self.dependences is not None and len(self.dependences) > 0:
             print("dep: {}".format(self.dependences))
@@ -96,7 +97,7 @@ class MJob:
         eff_msub_arguments.append("-o \"{}\"".format(outdir))
         
         print("I: msub {}".format(eff_msub_arguments))
-        stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=self.command)
+        stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=eff_command)
         result = len(stderr) == 0
         if result:
             self.moab_job_name = stdout.decode('utf8').strip()

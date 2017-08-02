@@ -21,7 +21,7 @@ def commit(message):
 def git_pull():
     with settings(user=env.user):
         with cd(env.questmon_folder):
-            run("git pull origin master")
+            run("git pull origin heltena")
     
 @task
 def run_kishore_pipeline():
