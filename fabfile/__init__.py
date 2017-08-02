@@ -25,7 +25,7 @@ def run_kishore_pipeline():
             run("module load python/anaconda3.6 ; python3.6 run_kishore_pipeline.py")
 
 @task
-def run_test_pipeline36():
+def run_test_pipeline():
     with settings(user=env.user):
         with cd(env.questmon_folder):
             run("module load python/anaconda3.6 ; python3.6 run_test_pipeline.py")
