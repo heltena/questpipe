@@ -38,7 +38,7 @@ _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}/05_eda"
 """)
 
-t1 = pipeline.create_job(name="blc2fastq")
+t1 = pipeline.create_job(name="bcl2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
     bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}

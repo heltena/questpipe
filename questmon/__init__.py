@@ -202,6 +202,12 @@ class Pipeline:
             count[state] = count.get(state, 0) + 1
         return count
 
+    def abort(self):
+        job_states = {job.moab_job_id: MJobStatus.COMPLETED for job in self.jobs}  
+        for job in self.jobs:
+            p = subprocess.Popen("mjobctl -c {}".format(job.moab_job_id), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            stdout, stderr = p.communicate()
+
     def exec_command(self, command, command_arguments, input=None):
         if command_arguments is None:
             command_arguments = []
