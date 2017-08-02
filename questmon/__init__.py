@@ -25,7 +25,7 @@ class MJobStatus:
 
 
 class MJob:
-    def __init__(self, pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, moab_job_name, moab_job_id, status):
+    def __init__(self, pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, moab_job_name, moab_job_id, status, command):
         self.pipeline = pipeline
         self.name = name
         self.msub_arguments = msub_arguments
@@ -37,10 +37,11 @@ class MJob:
         self.moab_job_name = moab_job_name
         self.moab_job_id = moab_job_id
         self.status = status
+        self.command = command
 
     @staticmethod
     def create_new(pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments):
-        return MJob(pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, None, None, MJobStatus.CREATED)
+        return MJob(pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, None, None, MJobStatus.CREATED, None)
 
     @staticmethod
     def from_json(pipeline, msub_arguments, data):
@@ -55,7 +56,8 @@ class MJob:
             pipeline.arguments,
             data["moab_job_name"],
             data["moab_job_id"],
-            data["status"])
+            data["status"],
+            data["command"])
 
     def to_json(self):
         return {
@@ -66,7 +68,8 @@ class MJob:
             "errdir": self.errdir,
             "moab_job_name": self.moab_job_name,
             "moab_job_id": self.moab_job_id,
-            "status": self.status}
+            "status": self.status,
+            "command": self.command}
 
     def __parse_string(self, input):
         return input.format(job_name=self.name, **self.arguments.values)

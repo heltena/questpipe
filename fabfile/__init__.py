@@ -1,4 +1,4 @@
-from fabric.api import cd, env, task, run, settings
+from fabric.api import cd, env, task, local, run, settings
 from questmon import Pipeline
 
 import json
@@ -11,6 +11,11 @@ def load_quest(src):
     env.hosts = ["quest.it.northwestern.edu"]
     env.environment = "quest"
     env.questmon_folder = src
+
+@task
+def commit(message):
+    local("git commit -a -m \"{}\"".format(message))
+    local("git push")
 
 @task
 def git_pull():
