@@ -20,11 +20,10 @@ arguments = Arguments(
 
     basedir="/projects/b1038/Pulmonary/Workspace/mouse_aging_map/users/general/mock_questmon/160728_NB501488_0018_AHFJJVBGXY",
     project_name="160728_NB501488_0018_AHFJJVBGXY",
-    projectdir="{basedir}",
 
-    workdir="{projectdir}/",
-    outdir="{projectdir}/{run_name}",
-    errdir="{projectdir}/{run_name}",
+    workdir="{basedir}/",
+    outdir="{basedir}/{run_name}",
+    errdir="{basedir}/{run_name}",
 )
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
