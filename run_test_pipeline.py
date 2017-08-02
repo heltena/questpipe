@@ -22,23 +22,23 @@ arguments = Arguments(
     project_name="160728_NB501488_0018_AHFJJVBGXY",
 
     workdir="{basedir}/",
-    outdir="{basedir}/{run_name}/",
-    errdir="{basedir}/{run_name}/",
+    outdir="{basedir}/{run_name}/logs/",
+    errdir="{basedir}/{run_name}/logs/",
 )
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
 _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}"
+    mkdir -p "{basedir}/{run_name}/logs"
+    mkdir -p "{basedir}/{run_name}/00_fastq"
+    mkdir -p "{basedir}/{run_name}/01_fastqc"
+    mkdir -p "{basedir}/{run_name}/02_trimmed"
+    mkdir -p "{basedir}/{run_name}/03_alignment"
+    mkdir -p "{basedir}/{run_name}/04_quantification"
+    mkdir -p "{basedir}/{run_name}/05_eda"
 """)
 
-t0 = pipeline.create_job(name="create_folders")
-t0.async_run("""
-    mkdir -p "{basedir}/{run_name}"
-    mkdir -p "{basedir}/{run_name}/0_fastq"
-    mkdir -p "{basedir}/{run_name}/1_fastqc"
-    """)
-
-t1 = pipeline.create_job(name="blc2fastq", dependences=[t0])
+t1 = pipeline.create_job(name="blc2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
     echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
