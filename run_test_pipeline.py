@@ -61,10 +61,10 @@ for index, data in enumerate(ssr.data):
 # STEP 4: Create the fastqc files from fastq
 step4_tasks = []
 for sample_filename in sample_filenames[0:2]:
-    copy_command = "cp {}/{}.fastq.gz {}".format(
+    copy_command = pipeline.parse_string("cp {}/{}.fastq.gz {}".format(
         "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
         sample_filename,
-        "{basedir}/{run_name}/00_fastq")
+        "{basedir}/{run_name}/00_fastq"))
 
     current_t = pipeline.create_job(
         name="fastqc_{}".format(sample_filename), 
