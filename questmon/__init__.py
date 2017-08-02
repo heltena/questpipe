@@ -235,6 +235,11 @@ class Pipeline:
         self.jobs.append(job)
         return job
 
+    def run(self, command):
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, stderr = p.communicate()
+        return None, stdout, stderr
+        
     def close(self):
         pass
 
