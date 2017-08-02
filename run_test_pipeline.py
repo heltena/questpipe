@@ -28,7 +28,7 @@ arguments = Arguments(
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
 _, stdout, stderr = pipeline.run("""
-    mkdir -p "{basedir}/{run_name}
+    mkdir -p "{basedir}/{run_name}"
 """)
 print(stdout)
 print(stderr)
