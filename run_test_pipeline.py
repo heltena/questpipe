@@ -51,9 +51,8 @@ commands = []
 ssr = SampleSheetLoader(sample_sheet_filename)
 for data in ssr.data:
     if data["Sample_Project"] == arguments.values["project_id"]:
-        filenames = "{}/*.fastq".format(data["Sample_ID"])
-        files_to_copy = "echo {}{}/*.fastq {}".format(
-            "{basedir}/Data/Intensities/BaseCalls/{project_id}/", filenames,
+        files_to_copy = "echo {}/*.fastq.gz {}".format(
+            "{basedir}/Data/Intensities/BaseCalls/{project_id}/",
             "{basedir}/{run_name}/00_fastq")
         commands.append(files_to_copy)
 
