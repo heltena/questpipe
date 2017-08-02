@@ -243,7 +243,7 @@ class Pipeline:
         return job
 
     def parse_string(self, input):
-        return input.format(**self.arguments.value)
+        return input.format(**self.arguments.values)
 
     def run(self, command):
         eff_command = self.parse_string(command)
