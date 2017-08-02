@@ -1,4 +1,4 @@
-from questmon import Arguments, Pipeline
+from questmon import Arguments, Pipeline, SampleSheetLoader
 from os.path import expanduser
 from datetime import datetime
 
@@ -20,6 +20,7 @@ arguments = Arguments(
 
     basedir="/projects/b1038/Pulmonary/Workspace/mouse_aging_map/users/general/mock_questmon/160728_NB501488_0018_AHFJJVBGXY",
     project_name="160728_NB501488_0018_AHFJJVBGXY",
+    project_id="160728_AM",
 
     workdir="{basedir}/",
     outdir="{basedir}/{run_name}/logs/",
@@ -41,8 +42,23 @@ _, stdout, stderr = pipeline.run("""
 t1 = pipeline.create_job(name="bcl2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
-    bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+    echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
     """)
+
+sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
+
+commands = []
+ssr = SampleSheetLoader(sample_sheet_filename)
+for data in ssr.data:
+    if data["Sample_Project"] == arguments["project_id"]:
+        filenames = "{}/*.fastq".format(data["Sample_ID"])
+        files_to_copy = "echo {}{}/*.fastq {}".format(
+            "{basedir}/Data/Intensities/BaseCalls/{project_id}/", filenames,
+            "{basedir}/{run_name}/00_fastq")
+        commands.append(files_to_copy)
+
+t2 = pipeline.create_job(name="copy_fastq", dependences=[t1])
+t2.async_run("\n".join(commands))
 
 pipeline.save_state(expanduser("~/pipeline.json"))
 pipeline.close()

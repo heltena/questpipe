@@ -46,4 +46,3 @@ def abort_pipeline():
     with settings(user=env.user):
         with cd(env.questmon_folder):
             run("module load python/anaconda3.6 ; python3.6 abort_pipeline.py")
-        
