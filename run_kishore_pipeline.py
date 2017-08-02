@@ -4,7 +4,7 @@ from os.path import expanduser
 
 arguments = Arguments(
     msub_arguments=[
-        "-A b1038 ",
+        "-A b1042 ",
         "-q pulrseq",
         "-l walltime=24:00:00,nodes=1:ppn=8",
         "-m a",
@@ -20,17 +20,17 @@ pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=ar
 
 t0 = pipeline.create_job(name="createdir")
 t0.async_run("""
-mkdir 01_fastq
+mkdir -p 01_fastq
 mkdir 02_fastqc
 mkdir 03_fastqc_trimmed
 mkdir 04_alignment
 mkdir 05_quantify
 """)
 
-#t1 = pipeline.create_job(name="fastqc")
-#t1.async_run("""
-#    fastqc {fastqfile} -o 01_fastqc 
-#    """)
+t1 = pipeline.create_job(name="fastqc")
+t1.async_run
+    fastqc  -o 01_fastqc 
+    """)
 
 #t2 = pipeline.create_job(name="trimming")
 #t2.async_run("""
