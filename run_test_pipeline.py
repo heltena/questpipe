@@ -48,41 +48,37 @@ t1.async_run("""
     echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
     """)
 
-# STEP 3: Read the fastq files
-sample_filenames = []
-sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
+# STEP 3: Create the fastqc files from fastq
+step3_tasks = []
 ssr = SampleSheetLoader(sample_sheet_filename)
-for index, data in enumerate(ssr.data):
+for index, data in enumerate(ssr.data)[0:2]:
     if data["Sample_Project"] == arguments.values["project_id"]:
         for line in [1, 2, 3, 4]:
             filename = "{}_S{}_L{:04}_R1_001".format(data["Sample_Name"], index+1, line)
-            sample_filenames.append(filename)
 
-# STEP 4: Create the fastqc files from fastq
-step4_tasks = []
-for sample_filename in sample_filenames[0:2]:
-    copy_command = pipeline.parse_string("cp {}/{}.fastq.gz {}".format(
-        "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
-        sample_filename,
-        "{basedir}/{run_name}/00_fastq"))
+            copy_command = pipeline.parse_string("cp {}/{}/{}.fastq.gz {}".format(
+                "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
+                data["Sample_ID"],
+                filename,
+                "{basedir}/{run_name}/00_fastq"))
 
-    current_t = pipeline.create_job(
-        name="fastqc_{}".format(sample_filename), 
-        dependences=[t1],
-        local_arguments=Arguments(
-            copy_command=copy_command,
-            sample_filename=sample_filename))
+            current_t = pipeline.create_job(
+                name="fastqc_{}".format(sample_filename), 
+                dependences=[t1],
+                local_arguments=Arguments(
+                    copy_command=copy_command,
+                    sample_filename=sample_filename))
 
-    current_t.async_run("""
-        module load fastqc/0.11.5
-        module load java
-        
-        {copy_command}
-        fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz -o {basedir}/{run_name}/01_fastqc
-        java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/01_fastqc/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq TRAILING:30 MINLEN:20 
-        gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq
-        """)
-    step4_tasks.append(current_t)
+            current_t.async_run("""
+                module load fastqc/0.11.5
+                module load java
+                
+                {copy_command}
+                fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz -o {basedir}/{run_name}/01_fastqc
+                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/01_fastqc/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq TRAILING:30 MINLEN:20 
+                gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq
+                """)
+            step3_tasks.append(current_t)
 
 
 pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
