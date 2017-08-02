@@ -84,9 +84,13 @@ class MJob:
             moab_job_ids = [mjob.moab_job_id for mjob in self.dependences]
             eff_msub_arguments.append("-W depend=afterok:{}".format(":".join(moab_job_ids)))
 
-        eff_msub_arguments.append("-d \"{}\"".format(self.workdir))
-        eff_msub_arguments.append("-e \"{}\"".format(self.errdir))
-        eff_msub_arguments.append("-o \"{}\"".format(self.outdir))
+        workdir = self.__parse_string(self.workdir)
+        errdir = self.__parse_string(self.errdir)
+        outdir = self.__parse_string(self.outdir)
+
+        eff_msub_arguments.append("-d \"{}\"".format(workdir))
+        eff_msub_arguments.append("-e \"{}\"".format(errdir))
+        eff_msub_arguments.append("-o \"{}\"".format(outdir))
         
         print("I: msub {}".format(eff_msub_arguments))
         stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=self.command)
