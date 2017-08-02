@@ -21,18 +21,19 @@ pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=ar
 
 t1 = pipeline.create_job(name="fastqc")
 t1.async_run("""
+    module load fastqc/0.11.5
     fastqc {input_fastq.gz file} -o ~/01_fastqc 
     """)
 
-#t2 = pipeline.create_job(name="trimming")
+t2 = pipeline.create_job(name="trimming")
 # if required the new trimmomatic tools can be adopted 
-#t2.async_run("""
+t2.async_run("""
    module load java
    java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads <numprocessors> -phred33 <fastqfile/location> <fastqfile/rename/ifrequired>
    TRAILING:30 MINLEN:20
    gzip <location/of/fastqfile>
     """)
-#t3 = pipeline.create_job(name="fastqc_post")
+#t3 = pipeline.create_job(name="trimmed")
 #t3.async_run("""
 #    sleep 10
 #    echo {job_name} >> helio001
