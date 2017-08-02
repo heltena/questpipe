@@ -55,7 +55,7 @@ ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data[0:2]):
     if data["Sample_Project"] == arguments.values["project_id"]:
         for line in [1, 2, 3, 4]:
-            sample_filename = "{}_S{}_L{:04}_R1_001".format(data["Sample_Name"], index+1, line)
+            sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
 
             copy_command = pipeline.parse_string("cp {}/{}/{}.fastq.gz {}".format(
                 "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
