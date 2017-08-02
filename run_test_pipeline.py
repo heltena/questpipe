@@ -30,10 +30,6 @@ pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=ar
 _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}"
 """)
-print(stdout)
-print(stderr)
-import sys
-sys.exit()
 
 t0 = pipeline.create_job(name="create_folders")
 t0.async_run("""
