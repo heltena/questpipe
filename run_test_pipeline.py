@@ -28,7 +28,14 @@ arguments = Arguments(
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
 
-t1 = pipeline.create_job(name="blc2fastq")
+t0 = pipeline.craete_job(name="create_folders")
+t0.async_run("""
+    mkdir -p "{basedir}/{run_name}"
+    mkdir -p "{basedir}/{run_name}/0_fastq"
+    mkdir -p "{basedir}/{run_name}/1_fastqc"
+    """)
+
+t1 = pipeline.create_job(name="blc2fastq", dependences=[t0])
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
     echo bcl2fastq -R {basedir}/{project_name} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
