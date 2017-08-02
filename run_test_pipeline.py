@@ -75,9 +75,9 @@ for index, data in enumerate(ssr.data[0:2]):
                 module load java
                 
                 {copy_command}
-                fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz -o {basedir}/{run_name}/01_fastqc
-                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/01_fastqc/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq TRAILING:30 MINLEN:20 
-                gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.fastq
+                fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz -o {basedir}/{run_name}/01_fastqc {sample_filename}.fastq.gz
+                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/01_fastqc/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq TRAILING:30 MINLEN:20 
+                gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
                 """)
             step3_tasks.append(current_t)
 
