@@ -41,7 +41,7 @@ _, stdout, stderr = pipeline.run("""
 t1 = pipeline.create_job(name="blc2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
-    echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+    bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
     """)
 
 pipeline.save_state(expanduser("~/pipeline.json"))
