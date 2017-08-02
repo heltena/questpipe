@@ -28,6 +28,8 @@ arguments = Arguments(
 )
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
+
+# STEP 1: Create the folders to store the data
 _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}"
     mkdir -p "{basedir}/{run_name}/logs"
@@ -39,16 +41,16 @@ _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}/05_eda"
 """)
 
-t1 = pipeline.create_job(name="bcl2fastq")
-t1.async_run("""
-    module load bcl2fastq/2.17.1.14
-    echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
-    """)
+# # STEP 2: Create fastq files
+# t1 = pipeline.create_job(name="bcl2fastq")
+# t1.async_run("""
+#     module load bcl2fastq/2.17.1.14
+#     echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+#     """)
 
-sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
-
+# STEP 3: Read the fastq files
 sample_filenames = []
-
+sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data):
     if data["Sample_Project"] == arguments.values["project_id"]:
@@ -56,16 +58,31 @@ for index, data in enumerate(ssr.data):
             filename = "{}_S{}_L{:04}_R1_001.fastq.gz".format(data["Sample_Name"], index+1, line)
             sample_filenames.append(filename)
 
+# STEP 4: Copy the fastq files to the result folder
 commands = []
 for sample_filename in sample_filenames:
     command = "echo cp {}/{} {}".format(
         "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
         sample_filename,
         "{basedir}/{run_name}/00_fastq")
-    commands.append(files_to_copy)
+    commands.append(command)
 
-t2 = pipeline.create_job(name="copy_fastq", dependences=[t1])
-t2.async_run("\n".join(commands))
+# t2 = pipeline.create_job(name="copy_fastq", dependences=[t1])
+# t2.async_run("\n".join(commands))
+
+# STEP 5: Create the fastqc files from fastq
+step5_tasks = []
+for sample_filename in sample_filenames:
+    current_t = pipeline.create_job(
+        name="copy_{}".format(sample_filename), 
+        dependences=[],   # t2
+        local_arguments=Arguments(sample_filename=sample_filename))
+    current_t.async_run("""
+        module load fastqc/0.11.5
+        echo fastqc {basedir}/{run_name}/00_fastq/{sample_filename} -o {basedir}/{run_name}/01_fastqc
+        """)
+    step5_tasks.append(current_t)
+
 
 pipeline.save_state(expanduser("~/pipeline.json"))
 pipeline.close()

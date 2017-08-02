@@ -18,6 +18,16 @@ class Arguments:
     def to_json(self):
         return self.values
 
+    def combine(self, other):
+        values = self.values.copy()
+        if other is not None:
+            for k, v in other.values.items():
+                values[k] = v 
+        return Arguments(**values)
+
+    def __repr__(self):
+        return self.values.__repr__()        
+
 
 class MJobStatus:
     CREATED = 0
@@ -228,7 +238,8 @@ class Pipeline:
             stdout, stderr = p.communicate()
             return None, stdout, stderr
 
-    def create_job(self, name, dependences=None, workdir=None, outdir=None, errdir=None):
+    def create_job(self, name, local_arguments=None, dependences=None, workdir=None, outdir=None, errdir=None):
+        self.arguments = self.arguments.combine(local_arguments)
         msub_arguments = self.arguments.get("msub_arguments", [])
         if dependences is None:
             dependences = []
