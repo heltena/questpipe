@@ -102,6 +102,7 @@ for index, data in enumerate(ssr.data[0:2]):
         tophat_t.async_run("""
             module load tophat/2.1.0
             module load samtools
+            module load bowtie2/2.2.6
 
             date
         	tophat --no-novel-juncs \
