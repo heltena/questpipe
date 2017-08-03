@@ -103,7 +103,7 @@ for index, data in enumerate(ssr.data[0:2]):
                    --transcriptome-index {tophat_transcriptome_index} \
                    -o $TMPDIR/{sample_name} \
                    {tophat_bowtie_index} \
-                   {fastq_filenames}";
+                   {fastq_filenames}
             """)
         step3_tasks.append(tophat_t)
 
