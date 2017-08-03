@@ -46,8 +46,25 @@ t3.async_run("""
 #    sleep 10
 #    echo {job_name} >> helio001
 #    """)
-#t5 = pipeline.create_job(name="quantify")
-#t5.async_run("""
+
+# this step takes longer time # may be we can make it independent of any other down stream steps
+t5 = pipeline.create_job(name="GBodycov")
+t5.async_run("""
+    module load samtools/1.2 
+    module load R/3.3.3
+    module load python # in which rseqc was integrated
+    #
+    refbedfile=/projects/b1038/Pulmonary/Anno/mm10/mm10_RefSeq.bed
+    bamdirectory="/projects/b1038/Pulmonary/Workspace/<location/of/bamfiles>"
+    cd $bamdirectory # should also contain the bai files
+    mkdir -p RSeQCreport # can be restructured according to Questmon or we can add prefix directly with additional arguents
+    geneBody_coverage.py -r $refbedfile -i $bamdirectory -o /projects/b1038/Pulmonary/Workspace/testbam/<location/of/RSeQCreport>
+    """)
+
+
+
+#t6 = pipeline.create_job(name="quantify")
+#t6.async_run("""
 #    sleep 10
 #    echo {job_name} >> helio001
 #    """)
