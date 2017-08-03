@@ -22,6 +22,12 @@ arguments = Arguments(
     project_name="160728_NB501488_0018_AHFJJVBGXY",
     project_id="160728_AM",
 
+    tophat_read_mismatches=2,
+    tophat_read_edit_dist=2,
+    tophat_max_multihits=5,
+    tophat_transcriptome_index="/projects/p20742/anno/tophat_tx/mm10.Ens_78.cuff",
+    tophat_bowtie_index="/projects/p20742/anno/bowtie_indexes/mm10",
+
     workdir="{basedir}/",
     outdir="{basedir}/{run_name}/logs/",
     errdir="{basedir}/{run_name}/logs/",
@@ -56,21 +62,17 @@ ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data[0:2]):
     if data["Sample_Project"] == arguments.values["project_id"]:
         tasks = []
+        fastq_filenames = []
         for line in [1, 2, 3, 4]:
             sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
-
-            # copy_command = pipeline.parse_string("cp {}/{}/{}.fastq.gz {}".format(
-            #     "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
-            #     data["Sample_ID"],
-            #     sample_filename,
-            #     "{basedir}/{run_name}/00_fastq"))
-
+            fastq_filenames.append("{basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz")
             current_t = pipeline.create_job(
                 name="fastqc_{sample_filename}", 
                 dependences=[t1],
                 local_arguments=Arguments(
                     sample_id=data["Sample_ID"],
-                    sample_filename=sample_filename))
+                    sample_name=data["Sample_Name"],
+                    sample_filename=sample_filename)
 
             current_t.async_run("""
                 module load fastqc/0.11.5
@@ -83,8 +85,27 @@ for index, data in enumerate(ssr.data[0:2]):
                 fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
                 """)
             tasks.append(current_t)
+        
         # Run tophat
-        # step3_tasks.append(tophat_task)
+        tophat_t = pipeline.create_job(
+            name="tophat_{sample_name}",
+            dependences=tasks,
+            local_arguments=Arguments(
+                sample_name=data["Sample_Name"],
+                fastq_filenames=",".join(fastq_filenames)))
+
+        tophat_t.async_run("""
+        	echo tophat --no-novel-juncs \
+                   --read-mismatches {tophat_read_mismatches} \
+                   --read-edit-dist {tophat_read_edit_dist} \
+                   --num-threads {num_processors} \
+                   --max-multihits {tophat_max_multihits} \
+                   --transcriptome-index {tophat_transcriptome_index}
+                   -o $TMPDIR/{sample_name} \
+                   {tophat_bowtie_index} \
+                   {fastq_filenames}";
+            """)
+        step3_tasks.append(tophat_t)
 
 pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
 pipeline.close()
