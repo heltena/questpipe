@@ -259,7 +259,7 @@ class Pipeline:
         self.jobs.append(job)
         return job
 
-    def parse_string(value, max_recursive_loops=10):
+    def parse_string(self, value, max_recursive_loops=10):
         for i in range(max_recursive_loops):
             new_value = value.format(**self.arguments.values)
             if new_value != value:
