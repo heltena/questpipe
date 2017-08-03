@@ -82,7 +82,7 @@ for index, data in enumerate(ssr.data[0:2]):
                     {basedir}/{run_name}/00_fastq
                 fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
                 java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
-                    -threads {num_processors} 
+                    -threads {num_processors} \
                     -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz \
                     {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq \
                     TRAILING:30 MINLEN:20 
@@ -111,11 +111,9 @@ for index, data in enumerate(ssr.data[0:2]):
                 --num-threads {num_processors} \
                 --max-multihits {tophat_max_multihits} \
                 --transcriptome-index {tophat_transcriptome_index} \
-                -o $TMPDIR/{sample_name} \
+                -o {basedir}/{run_name}/04_alignment/{sample_name} \
                 {tophat_bowtie_index} \
                 {fastq_filenames}
-            date
-            rsync -av $TMPDIR/{sample_name}/* {basedir}/{run_name}/04_alignment/{sample_name}/
             date
             ln -s {basedir}/{run_name}/04_alignment/{sample_name}/accepted_hits.bam {basedir}/{run_name}/04_alignment/{sample_name}.bam
             samtools index {basedir}/{run_name}/04_alignment/{sample_name}.bam
