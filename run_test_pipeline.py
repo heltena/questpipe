@@ -69,7 +69,6 @@ for index, data in enumerate(ssr.data[0:2]):
                 name="fastqc_{sample_filename}", 
                 dependences=[t1],
                 local_arguments=Arguments(
-                    copy_command=copy_command,
                     sample_id=data["Sample_ID"],
                     sample_filename=sample_filename))
 
