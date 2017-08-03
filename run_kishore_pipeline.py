@@ -48,6 +48,7 @@ t3.async_run("""
 #    """)
 
 # this step takes longer time # may be we can make it independent of any other down stream steps
+# we also get a log file for this job so it can be directed to logs directory created
 t5 = pipeline.create_job(name="GBodycov")
 t5.async_run("""
     module load samtools/1.2 
