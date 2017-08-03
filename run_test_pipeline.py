@@ -76,7 +76,7 @@ for index, data in enumerate(ssr.data[0:2]):
                 module load fastqc/0.11.5
                 module load java
                 
-                cp {basedir}/Data/Intensities/BaseCells/{project_id}/{sample_id}/{sample_filename}.fastq.gz {basedir}/{run_name}/00_fastq
+                cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz {basedir}/{run_name}/00_fastq
                 fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
                 java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq TRAILING:30 MINLEN:20 
                 gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
