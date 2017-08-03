@@ -72,7 +72,7 @@ for index, data in enumerate(ssr.data[0:2]):
                 local_arguments=Arguments(
                     sample_id=data["Sample_ID"],
                     sample_name=data["Sample_Name"],
-                    sample_filename=sample_filename)
+                    sample_filename=sample_filename))
 
             current_t.async_run("""
                 module load fastqc/0.11.5
