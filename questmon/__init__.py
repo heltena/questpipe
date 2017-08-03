@@ -82,8 +82,14 @@ class MJob:
             "status": self.status,
             "command": self.command}
 
-    def __parse_string(self, input):
-        return input.format(job_name=self.name, **self.arguments.values)
+    def __parse_string(self, value, max_recursive_loops=10):
+        for i in range(max_recursive_loops):
+            new_value = value.format(job_name=self.name, **self.arguments.values)
+            if new_value != value:
+                value = new_value
+            else:
+                return new_value
+        raise Exception("recursive parsing")
 
     def async_run(self, command):
         if self.status != MJobStatus.CREATED:
@@ -253,8 +259,14 @@ class Pipeline:
         self.jobs.append(job)
         return job
 
-    def parse_string(self, input):
-        return input.format(**self.arguments.values)
+    def parse_string(value, max_recursive_loops=10):
+        for i in range(max_recursive_loops):
+            new_value = value.format(**self.arguments.values)
+            if new_value != value:
+                value = new_value
+            else:
+                return new_value
+        raise Exception("recursive parsing")
 
     def run(self, command):
         eff_command = self.parse_string(command)

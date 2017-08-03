@@ -55,34 +55,37 @@ sample_sheet_filename = pipeline.parse_string("{basedir}/SampleSheet.csv")
 ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data[0:2]):
     if data["Sample_Project"] == arguments.values["project_id"]:
+        tasks = []
         for line in [1, 2, 3, 4]:
             sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
 
-            copy_command = pipeline.parse_string("cp {}/{}/{}.fastq.gz {}".format(
-                "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
-                data["Sample_ID"],
-                sample_filename,
-                "{basedir}/{run_name}/00_fastq"))
+            # copy_command = pipeline.parse_string("cp {}/{}/{}.fastq.gz {}".format(
+            #     "{basedir}/Data/Intensities/BaseCalls/{project_id}", 
+            #     data["Sample_ID"],
+            #     sample_filename,
+            #     "{basedir}/{run_name}/00_fastq"))
 
             current_t = pipeline.create_job(
-                name="fastqc_{}".format(sample_filename), 
+                name="fastqc_{sample_filename}", 
                 dependences=[t1],
                 local_arguments=Arguments(
                     copy_command=copy_command,
+                    sample_id=data["Sample_ID"],
                     sample_filename=sample_filename))
 
             current_t.async_run("""
                 module load fastqc/0.11.5
                 module load java
                 
-                {copy_command}
+                cp {basedir}/Data/Intensities/BaseCells/{project_id}/{sample_id}/{sample_filename}.fastq.gz {basedir}/{run_name}/00_fastq
                 fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
                 java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq TRAILING:30 MINLEN:20 
                 gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
                 fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
                 """)
-            step3_tasks.append(current_t)
-
+            tasks.append(current_t)
+        # Run tophat
+        # step3_tasks.append(tophat_task)
 
 pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
 pipeline.close()
