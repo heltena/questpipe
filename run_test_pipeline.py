@@ -100,7 +100,7 @@ for index, data in enumerate(ssr.data[0:2]):
                    --read-edit-dist {tophat_read_edit_dist} \
                    --num-threads {num_processors} \
                    --max-multihits {tophat_max_multihits} \
-                   --transcriptome-index {tophat_transcriptome_index}
+                   --transcriptome-index {tophat_transcriptome_index} \
                    -o $TMPDIR/{sample_name} \
                    {tophat_bowtie_index} \
                    {fastq_filenames}";
