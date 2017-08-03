@@ -60,6 +60,8 @@ t5.async_run("""
     cd $bamdirectory # should also contain the bai files
     mkdir -p RSeQCreport # can be restructured according to Questmon or we can add prefix directly with additional arguents
     geneBody_coverage.py -r $refbedfile -i $bamdirectory -o /projects/b1038/Pulmonary/Workspace/testbam/<location/of/RSeQCreport>
+    # tin.py -r $refbedfile -i $bamdirectory #
+    #read_duplication.py -i bamfile -o <desired location>
     """)
 
 
