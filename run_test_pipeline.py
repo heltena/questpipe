@@ -121,24 +121,23 @@ pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=ar
 #             """)
 #         step3_tasks.append(tophat_t)
 
-t4 = pipeline.create_job(
-    name="alignment_report",
-    dependences=None) #setp3_tasks)
-t4.async_run("""
-    module load R/3.3.1
-    Rscript /projects/p20742/tools/createTophatReport.R --topHatDir={basedir}/{run_name}/04_alignment/ --nClus={num_processors}
-    """)
-
-
-    # echo install.packages("GenomicAlignments") | Rscript
-    # library(GenomicAlignments)
-
-# t5 = pipeline.create_job(
-#     name="quantification",
-#     dependences=[t4])
-# t5.async_run("""
-
+# t4 = pipeline.create_job(
+#     name="alignment_report",
+#     dependences=step3_tasks)
+# t4.async_run("""
+#     module load R/3.3.1
+#     Rscript /projects/p20742/tools/createTophatReport.R --topHatDir={basedir}/{run_name}/04_alignment/ --nClus={num_processors}
 #     """)
+
+
+t5 = pipeline.create_job(
+    name="quantification",
+    dependences=[])  #[t4])
+t5.async_run("""
+    perl /projects/p20742//tools/makeHTseqCountsTable.pl {basedir}/{run_name}/04_alignment \
+        {tophat_transcriptome_index} \
+        {basedir}/{run_name}/05_quantification
+    """)
 
 pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
 pipeline.close()
