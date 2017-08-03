@@ -49,10 +49,7 @@ def abort_pipeline():
 
 @task
 def test():
-    from questmon import Arguments
-    gl = Arguments(pepe=1, juan=2)
-    loc = Arguments(andres=2, juan=3)
-    print(gl.combine(loc))
-    print(loc.combine(gl))
-    print(gl)
-    print(loc)
+    import pathlib
+    f = "/Users/heltena/"
+    for i in pathlib.Path(f):
+        print(i)

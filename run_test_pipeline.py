@@ -36,9 +36,10 @@ _, stdout, stderr = pipeline.run("""
     mkdir -p "{basedir}/{run_name}/00_fastq"
     mkdir -p "{basedir}/{run_name}/01_fastqc"
     mkdir -p "{basedir}/{run_name}/02_trimmed"
-    mkdir -p "{basedir}/{run_name}/03_alignment"
-    mkdir -p "{basedir}/{run_name}/04_quantification"
-    mkdir -p "{basedir}/{run_name}/05_eda"
+    mkdir -p "{basedir}/{run_name}/03_fastqc"
+    mkdir -p "{basedir}/{run_name}/04_alignment"
+    mkdir -p "{basedir}/{run_name}/05_quantification"
+    mkdir -p "{basedir}/{run_name}/06_eda"
 """)
 
 # STEP 2: Create fastq files
@@ -75,9 +76,10 @@ for index, data in enumerate(ssr.data[0:2]):
                 module load java
                 
                 {copy_command}
-                fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz -o {basedir}/{run_name}/01_fastqc {sample_filename}.fastq.gz
+                fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
                 java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/01_fastqc/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq TRAILING:30 MINLEN:20 
                 gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
+                fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
                 """)
             step3_tasks.append(current_t)
 
