@@ -101,6 +101,8 @@ for index, data in enumerate(ssr.data[0:2]):
 
         tophat_t.async_run("""
             module load tophat/2.1.0
+            module load samtools
+
             date
         	tophat --no-novel-juncs \
                 --read-mismatches {tophat_read_mismatches} \
