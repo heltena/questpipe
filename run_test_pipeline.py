@@ -78,9 +78,14 @@ for index, data in enumerate(ssr.data[0:2]):
                 module load fastqc/0.11.5
                 module load java
                 
-                cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz {basedir}/{run_name}/00_fastq
+                cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
+                    {basedir}/{run_name}/00_fastq
                 fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
-                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE -threads {num_processors} -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq TRAILING:30 MINLEN:20 
+                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
+                    -threads {num_processors} 
+                    -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz \
+                    {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq \
+                    TRAILING:30 MINLEN:20 
                 gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
                 fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
                 """)
@@ -95,15 +100,23 @@ for index, data in enumerate(ssr.data[0:2]):
                 fastq_filenames=",".join(fastq_filenames)))
 
         tophat_t.async_run("""
-        	echo tophat --no-novel-juncs \
-                   --read-mismatches {tophat_read_mismatches} \
-                   --read-edit-dist {tophat_read_edit_dist} \
-                   --num-threads {num_processors} \
-                   --max-multihits {tophat_max_multihits} \
-                   --transcriptome-index {tophat_transcriptome_index} \
-                   -o $TMPDIR/{sample_name} \
-                   {tophat_bowtie_index} \
-                   {fastq_filenames}
+            module load tophat/2.1.0
+            date
+        	tophat --no-novel-juncs \
+                --read-mismatches {tophat_read_mismatches} \
+                --read-edit-dist {tophat_read_edit_dist} \
+                --num-threads {num_processors} \
+                --max-multihits {tophat_max_multihits} \
+                --transcriptome-index {tophat_transcriptome_index} \
+                -o $TMPDIR/{sample_name} \
+                {tophat_bowtie_index} \
+                {fastq_filenames}
+            date
+            rsync -av $TMPDIR/{sample_name}/* {basedir}/{run_name}/04_alignment/{sample_name}/
+            date
+            ln -s {basedir}/{run_name}/04_alignment/{sample_name}/accepted_hits.bam {basedir}/{run_name}/04_alignment/{sample_name}.bam
+            samtools index {basedir}/{run_name}/04_alignment/{sample_name}.bam
+            date
             """)
         step3_tasks.append(tophat_t)
 
