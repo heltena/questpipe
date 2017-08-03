@@ -103,8 +103,9 @@ for index, data in enumerate(ssr.data[0:2]):
             module load tophat/2.1.0
             module load samtools
             module load bowtie2/2.2.6
+            module load boost
+            module load gcc/4.8.3
 
-            date
         	tophat --no-novel-juncs \
                 --read-mismatches {tophat_read_mismatches} \
                 --read-edit-dist {tophat_read_edit_dist} \
@@ -114,10 +115,8 @@ for index, data in enumerate(ssr.data[0:2]):
                 -o {basedir}/{run_name}/04_alignment/{sample_name} \
                 {tophat_bowtie_index} \
                 {fastq_filenames}
-            date
             ln -s {basedir}/{run_name}/04_alignment/{sample_name}/accepted_hits.bam {basedir}/{run_name}/04_alignment/{sample_name}.bam
             samtools index {basedir}/{run_name}/04_alignment/{sample_name}.bam
-            date
             """)
         step3_tasks.append(tophat_t)
 
