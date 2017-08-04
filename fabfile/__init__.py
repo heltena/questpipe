@@ -36,16 +36,16 @@ def run_test_pipeline():
             run("module load python/anaconda3.6 ; python3.6 run_test_pipeline.py")
 
 @task
-def checkjobs():
+def checkjobs(pipeline_name):
     with settings(user=env.user):
         with cd(env.questmon_folder):
-            run("module load python/anaconda3.6 ; python3.6 checkjobs.py")
+            run("module load python/anaconda3.6 ; python3.6 checkjobs.py {}".format(pipeline_name))
 
 @task
-def abort_pipeline():
+def abort_pipeline(pipeline_name):
     with settings(user=env.user):
         with cd(env.questmon_folder):
-            run("module load python/anaconda3.6 ; python3.6 abort_pipeline.py")
+            run("module load python/anaconda3.6 ; python3.6 abort_pipeline.py {}".format(pipeline_name))
 
 @task
 def test():
