@@ -2,8 +2,7 @@ from questmon import Arguments, Pipeline, SampleSheetLoader
 from os.path import expanduser
 from datetime import datetime
 
-# timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-timestamp = "20170803_160221"
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = "Result_{}".format(timestamp)
 
 arguments = Arguments(
