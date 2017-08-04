@@ -24,7 +24,7 @@ arguments = Arguments(
     project_dir="{basedir}/{project_name}",
 
     rundir="{basedir}/{run_name}",
-    illumina_csv_sheet="{basedir}/SampleSheet.csv",
+    illumina_csv_sheet="{project_dir}/SampleSheet.csv",
 
     tophat_read_mismatches=2,
     tophat_read_edit_dist=2,
@@ -33,7 +33,7 @@ arguments = Arguments(
     tophat_bowtie_index="/projects/p20742/anno/bowtie_indexes/mm10",
     quantification_transcriptome_index="{tophat_transcriptome_index}",
 
-    workdir="{basedir}/",
+    workdir="{project_dir}/",
     outdir="{rundir}/logs/",
     errdir="{rundir}/logs/",
 )
