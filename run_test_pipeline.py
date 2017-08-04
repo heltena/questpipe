@@ -127,7 +127,7 @@ for index, data in enumerate(ssr.data[0:2]):
                 -s reverse -t exon -i gene_id \
                 {rundir}/04_alignment/{sample_name}.bam \
                 {quantification_transcriptome_index} \
-                > {rundir}/05_quantification/{sample_name}.htseq.counts
+                > {rundir}/04_alignment/{sample_name}.htseq.counts
             """)
         step3_tasks.append(tophat_t)
 
