@@ -51,11 +51,11 @@ _, stdout, stderr = pipeline.run("""
 """)
 
 # STEP 2: Create fastq files
-# t1 = pipeline.create_job(name="bcl2fastq")
-# t1.async_run("""
-#     module load bcl2fastq/2.17.1.14
-#     echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
-#     """)
+t1 = pipeline.create_job(name="bcl2fastq")
+t1.async_run("""
+    module load bcl2fastq/2.17.1.14
+    # bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+    """)
 
 # STEP 3: Create the fastqc files from fastq
 step3_tasks = []
