@@ -29,9 +29,9 @@ arguments = Arguments(
     tophat_read_mismatches=2,
     tophat_read_edit_dist=2,
     tophat_max_multihits=5,
-    tophat_transcriptome_index="/projects/p20742/anno/Ens/mm10.Ens_78/mm10.Ens_78.cuff",   # tophat does not like the "gtf" extension :-(
+    tophat_transcriptome_index="/projects/p20742/anno/tophat_tx/mm10.Ens_78.cuff",  # tophat uses GFF files and it does not like the extension :-(
     tophat_bowtie_index="/projects/p20742/anno/bowtie_indexes/mm10",
-    quantification_transcriptome_index="{tophat_transcriptome_index}.gtf",
+    quantification_transcriptome_index="/projects/p20742/anno/Ens/mm10.Ens_78/mm10.Ens_78.cuff.gtf",
 
     workdir="{project_dir}/",
     outdir="{rundir}/logs/",
