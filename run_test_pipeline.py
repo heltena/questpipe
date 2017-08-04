@@ -2,7 +2,8 @@ from questmon import Arguments, Pipeline, SampleSheetLoader
 from os.path import expanduser
 from datetime import datetime
 
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+# timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+timestamp = "20170804_100141"
 run_name = "Result_{}".format(timestamp)
 
 arguments = Arguments(
@@ -50,11 +51,11 @@ _, stdout, stderr = pipeline.run("""
 """)
 
 # STEP 2: Create fastq files
-t1 = pipeline.create_job(name="bcl2fastq")
-t1.async_run("""
-    module load bcl2fastq/2.17.1.14
-    echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
-    """)
+# t1 = pipeline.create_job(name="bcl2fastq")
+# t1.async_run("""
+#     module load bcl2fastq/2.17.1.14
+#     echo bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+#     """)
 
 # STEP 3: Create the fastqc files from fastq
 step3_tasks = []
@@ -76,19 +77,19 @@ for index, data in enumerate(ssr.data[0:2]):
                     sample_filename=sample_filename))
 
             current_t.async_run("""
-                module load fastqc/0.11.5
-                module load java
+                # module load fastqc/0.11.5
+                # module load java
                 
-                cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
-                    {basedir}/{run_name}/00_fastq
-                fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
-                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
-                    -threads {num_processors} \
-                    -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz \
-                    {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq \
-                    TRAILING:30 MINLEN:20 
-                gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
-                fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
+                # cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
+                #     {basedir}/{run_name}/00_fastq
+                # fastqc -o {basedir}/{run_name}/01_fastqc {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz
+                # java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
+                #     -threads {num_processors} \
+                #     -phred33 {basedir}/{run_name}/00_fastq/{sample_filename}.fastq.gz \
+                #     {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq \
+                #     TRAILING:30 MINLEN:20 
+                # gzip {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq
+                # fastqc -o {basedir}/{run_name}/03_fastqc {basedir}/{run_name}/02_trimmed/{sample_filename}.trimmed.fastq.gz
                 """)
             tasks.append(current_t)
         
@@ -106,18 +107,19 @@ for index, data in enumerate(ssr.data[0:2]):
             module load bowtie2/2.2.6
             module load boost
             module load gcc/4.8.3
+            module load python
 
-        	tophat --no-novel-juncs \
-                --read-mismatches {tophat_read_mismatches} \
-                --read-edit-dist {tophat_read_edit_dist} \
-                --num-threads {num_processors} \
-                --max-multihits {tophat_max_multihits} \
-                --transcriptome-index {tophat_transcriptome_index} \
-                -o {basedir}/{run_name}/04_alignment/{sample_name} \
-                {tophat_bowtie_index} \
-                {fastq_filenames}
-            ln -s {basedir}/{run_name}/04_alignment/{sample_name}/accepted_hits.bam {basedir}/{run_name}/04_alignment/{sample_name}.bam
-            samtools index {basedir}/{run_name}/04_alignment/{sample_name}.bam
+        	# tophat --no-novel-juncs \
+            #     --read-mismatches {tophat_read_mismatches} \
+            #     --read-edit-dist {tophat_read_edit_dist} \
+            #     --num-threads {num_processors} \
+            #     --max-multihits {tophat_max_multihits} \
+            #     --transcriptome-index {tophat_transcriptome_index} \
+            #     -o {basedir}/{run_name}/04_alignment/{sample_name} \
+            #     {tophat_bowtie_index} \
+            #     {fastq_filenames}
+            # ln -s {basedir}/{run_name}/04_alignment/{sample_name}/accepted_hits.bam {basedir}/{run_name}/04_alignment/{sample_name}.bam
+            # samtools index {basedir}/{run_name}/04_alignment/{sample_name}.bam
             htseq-count -f bam -q -m intersection-nonempty \
                 -s reverse -t exon -i gene_id \
                 {basedir}/{run_name}/04_alignment/{sample_name}.bam \
