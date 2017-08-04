@@ -64,7 +64,7 @@ t1.async_run("""
 step3_tasks = []
 sample_sheet_filename = pipeline.parse_string("{illumina_csv_sheet}")
 ssr = SampleSheetLoader(sample_sheet_filename)
-for index, data in enumerate(ssr.data[0:2]):
+for index, data in enumerate(ssr.data):
     if data["Sample_Project"] == arguments.values["project_id"]:
         tasks = []
         fastq_filenames = []
