@@ -54,7 +54,7 @@ _, stdout, stderr = pipeline.run("""
 """)
 
 # STEP 2: Create fastq files
-t1 = pipeline.create_job(name="bcl2fastq")
+t1 = pipeline.create_job(name="00_bcl2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
     # bcl2fastq -R {project_dir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
@@ -72,7 +72,7 @@ for index, data in enumerate(ssr.data[0:2]):
             sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
             fastq_filenames.append("{rundir}/02_trimmed/{sample_filename}.trimmed.fastq.gz")
             current_t = pipeline.create_job(
-                name="fastqc_{sample_filename}", 
+                name="01_fastqc_{sample_filename}", 
                 dependences=[t1],
                 local_arguments=Arguments(
                     sample_id=data["Sample_ID"],
@@ -98,7 +98,7 @@ for index, data in enumerate(ssr.data[0:2]):
         
         # Run tophat
         tophat_t = pipeline.create_job(
-            name="tophat_{sample_name}",
+            name="02_tophat_{sample_name}",
             dependences=tasks,
             local_arguments=Arguments(
                 sample_name=data["Sample_Name"],
@@ -132,7 +132,7 @@ for index, data in enumerate(ssr.data[0:2]):
         step3_tasks.append(tophat_t)
 
 t4 = pipeline.create_job(
-    name="alignment_report",
+    name="03_alignment_report",
     dependences=step3_tasks)
 t4.async_run("""
     module load R/3.3.1
@@ -142,7 +142,7 @@ t4.async_run("""
 
 
 t5 = pipeline.create_job(
-    name="quantification",
+    name="04_quantification",
     dependences=[t4])
 t5.async_run("""
     perl /projects/p20742/tools/makeHTseqCountsTable.pl {rundir}/04_alignment \
