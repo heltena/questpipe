@@ -98,7 +98,7 @@ class MJob:
         eff_command = self.__parse_string(command)
         eff_msub_arguments = [self.__parse_string(arg) for arg in self.msub_arguments]
         if self.dependences is not None and len(self.dependences) > 0:
-            print("dep: {}".format(self.dependences))
+            self.pipeline.log("dep: {}".format(self.dependences))
             for mjob in self.dependences:
                 if mjob.moab_job_id is None:
                     raise Exception("MJob must be running in order to be dependence")
@@ -113,19 +113,19 @@ class MJob:
         eff_msub_arguments.append("-e \"{}\"".format(errdir))
         eff_msub_arguments.append("-o \"{}\"".format(outdir))
         
-        print("I: msub {}".format(eff_msub_arguments))
+        self.pipeline.log("I: msub {}".format(eff_msub_arguments))
         stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=eff_command)
         result = len(stderr) == 0
         if result:
             self.moab_job_name = stdout.decode('utf8').strip()
             self.moab_job_id = self.moab_job_name.split(".")[0]
             self.status = MJobStatus.RUNNING
-            print("I: Running {}".format(self.moab_job_id))
+            self.pipeline.log("I: Running {}".format(self.moab_job_id))
         else:
             self.moab_job_name = None
             self.moab_job_id = None
             self.status = MJobStatus.CREATED
-            print("E: {}".format(stderr))
+            self.pipeline.log("E: {}".format(stderr))
         return self
 
     @property
@@ -153,11 +153,16 @@ class MJob:
 
 
 class Pipeline:
-    def __init__(self, name, join_command_arguments=False, arguments=None):
+    def __init__(self, name, join_command_arguments=False, arguments=None, debug=False):
         self.name = name
         self.join_command_arguments = join_command_arguments
         self.arguments = arguments if arguments is not None else Arguments({})
         self.jobs = []
+        self.debug = debug
+
+    def log(self, str):
+        if self.debug:
+            print(str)
 
     @staticmethod
     def load_state(filename):
@@ -234,7 +239,7 @@ class Pipeline:
         else:
             eff_command = [command] + command_arguments
 
-        print("I: {} / {}".format(eff_command, input if input is not None else "None"))
+        self.log("I: {} / {}".format(eff_command, input if input is not None else "None"))
         if input is not None:
             p = subprocess.Popen(eff_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = p.communicate(bytes(input, "utf-8"))
