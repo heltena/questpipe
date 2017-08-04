@@ -23,7 +23,7 @@ arguments = Arguments(
     project_name="160728_NB501488_0018_AHFJJVBGXY",
     project_dir="{basedir}/{project_name}",
 
-    rundir="{basedir}/{run_name}",
+    rundir="{project_dir}/{run_name}",
     illumina_csv_sheet="{project_dir}/SampleSheet.csv",
 
     tophat_read_mismatches=2,
@@ -57,7 +57,7 @@ _, stdout, stderr = pipeline.run("""
 t1 = pipeline.create_job(name="bcl2fastq")
 t1.async_run("""
     module load bcl2fastq/2.17.1.14
-    # bcl2fastq -R {basedir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+    # bcl2fastq -R {project_dir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
     """)
 
 # STEP 3: Create the fastqc files from fastq
@@ -83,7 +83,7 @@ for index, data in enumerate(ssr.data[0:2]):
                 module load fastqc/0.11.5
                 module load java
                 
-                cp {basedir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
+                cp {project_dir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
                     {rundir}/00_fastq
                 fastqc -o {rundir}/01_fastqc {rundir}/00_fastq/{sample_filename}.fastq.gz
                 java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
