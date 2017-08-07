@@ -36,11 +36,12 @@ class MJobStatus:
 
 
 class MJob:
-    def __init__(self, pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, moab_job_name, moab_job_id, status, command):
+    def __init__(self, pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments, moab_job_name, moab_job_id, status, command):
         self.pipeline = pipeline
         self.name = name
         self.msub_arguments = msub_arguments
         self.dependences = dependences
+        self.notokdependences = notokdependences
         self.workdir = workdir
         self.outdir = outdir
         self.errdir = errdir
@@ -51,8 +52,8 @@ class MJob:
         self.command = command
 
     @staticmethod
-    def create_new(pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments):
-        return MJob(pipeline, name, msub_arguments, dependences, workdir, outdir, errdir, arguments, None, None, MJobStatus.CREATED, None)
+    def create_new(pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments):
+        return MJob(pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments, None, None, MJobStatus.CREATED, None)
 
     @staticmethod
     def from_json(pipeline, msub_arguments, data):
@@ -61,6 +62,7 @@ class MJob:
             data["name"], 
             msub_arguments,
             [],   # fix dependences later
+            [],   # fix notok dependences later
             data["workdir"],
             data["outdir"],
             data["errdir"],
@@ -71,9 +73,8 @@ class MJob:
             data["command"])
 
     def to_json(self):
-        return {
+        result = {
             "name": self.name,
-            "dependences": [job.moab_job_id for job in self.dependences],
             "workdir": self.workdir,
             "outdir": self.outdir,
             "errdir": self.errdir,
@@ -81,6 +82,11 @@ class MJob:
             "moab_job_id": self.moab_job_id,
             "status": self.status,
             "command": self.command}
+        if self.dependences is not None:
+            result["dependences"] = [job.moab_job_id for job in self.dependences]
+        if self.notokdependences is not None:
+            result["notokdependences"] = [job.moab_job_id for job in self.notokdependences]
+        return result
 
     def __parse_string(self, value, max_recursive_loops=10):
         for i in range(max_recursive_loops):
@@ -91,19 +97,33 @@ class MJob:
                 return new_value
         raise Exception("recursive parsing")
 
+    def prepare_async_run(self, command):
+        self.__async_run(command, hold=True)
+
     def async_run(self, command):
+        self.__async_run(command, hold=False)
+
+    def __async_run(self, command, hold):
         if self.status != MJobStatus.CREATED:
             raise Exception("MJob is running")
         self.command = command
         eff_command = self.__parse_string(command)
         eff_msub_arguments = [self.__parse_string(arg) for arg in self.msub_arguments]
         if self.dependences is not None and len(self.dependences) > 0:
-            self.pipeline.log("dep: {}".format(self.dependences))
+            self.pipeline.log("dep: {}".format([job.moab_job_id for job in self.dependences]))
             for mjob in self.dependences:
                 if mjob.moab_job_id is None:
                     raise Exception("MJob must be running in order to be dependence")
             moab_job_ids = [mjob.moab_job_id for mjob in self.dependences]
             eff_msub_arguments.append("-W depend=afterok:{}".format(":".join(moab_job_ids)))
+
+        if self.notokdependences is not None and len(self.notokdependences) > 0:
+            self.pipeline.log("notok dep: {}".format([job.moab_job_id for job in self.notokdependences]))
+            for mjob in self.notokdependences:
+                if mjob.moab_job_id is None:
+                    raise Exception("MJob must be running in order to be not ok dependence")
+            moab_job_ids = [mjob.moab_job_id for mjob in self.notokdependences]
+            eff_msub_arguments.append("-W depend=afternotok:{}".format(":".join(moab_job_ids)))
 
         workdir = self.__parse_string(self.workdir)
         errdir = self.__parse_string(self.errdir)
@@ -113,6 +133,9 @@ class MJob:
         eff_msub_arguments.append("-e \"{}\"".format(errdir))
         eff_msub_arguments.append("-o \"{}\"".format(outdir))
         
+        if hold:
+            eff_msub_arguments.append("-h")
+
         self.pipeline.log("I: msub {}".format(eff_msub_arguments))
         stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=eff_command)
         result = len(stderr) == 0
@@ -122,12 +145,31 @@ class MJob:
             self.status = MJobStatus.RUNNING
             self.pipeline.log("I: Running {}".format(self.moab_job_id))
         else:
-            self.moab_job_name = None
-            self.moab_job_id = None
-            self.status = MJobStatus.CREATED
-            self.pipeline.log("E: {}".format(stderr))
+            raise Exception("Cannot start job: {}".format(stderr))
         return self
 
+    def unhold(self):
+        self.pipeline.log("I: cancelling {}".format(self.moab_job_id))
+        stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-u all", self.moab_job_id])
+        result = len(stderr) == 0
+        if result:
+            self.status = MJobStatus.RUNNING
+            self.pipeline.log("I: Unhold {}".format(self.moab_job_id))
+        else:
+            self.pipeline.log("E: Error: {}".format(stderr))
+            self.status = MJobStatus.CREATED       
+        
+    def cancel(self):
+        self.pipeline.log("I: cancelling {}".format(self.moab_job_id))
+        stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-c", self.moab_job_id])
+        result = len(stderr) == 0
+        if result:
+            self.status = MJobStatus.COMPLETED
+            self.pipeline.log("I: Cancelled {}".format(self.moab_job_id))
+        else:
+            self.pipeline.log("E: Error: {}".format(stderr))
+            self.status = MJobStatus.CREATED       
+        
     @property
     def is_running(self):
         if self.status in [MJobStatus.CREATED, MJobStatus.COMPLETED]:
@@ -177,11 +219,12 @@ class Pipeline:
         arguments = Arguments.from_json(data["arguments"])
         msub_arguments = arguments.get("msub_arguments", [])
         pipeline = Pipeline(name, join_command_arguments, arguments)
-        jobs = [(d["dependences"], MJob.from_json(pipeline, msub_arguments, d)) for d in data["jobs"]]
-        job_ids = {job.moab_job_id: job for _, job in jobs}
-        for dependences, job in jobs:
+        jobs = [(d.get("dependences", []), d.get("notokdependences", []), MJob.from_json(pipeline, msub_arguments, d)) for d in data["jobs"]]
+        job_ids = {job.moab_job_id: job for _, _, job in jobs}
+        for dependences, notokdependences, job in jobs:
             job.dependences = [job_ids[dependence] for dependence in dependences]
-        pipeline.jobs = [job for (dependence, job) in jobs]
+            job.notokdependences = [job_ids[dependence] for dependence in notokdependences]
+        pipeline.jobs = [job for (dependence, notokdependence, job) in jobs]
         return pipeline
 
     def to_json(self):
@@ -249,7 +292,7 @@ class Pipeline:
             stdout, stderr = p.communicate()
             return None, stdout, stderr
 
-    def create_job(self, name, local_arguments=None, dependences=None, workdir=None, outdir=None, errdir=None):
+    def create_job(self, name, local_arguments=None, dependences=None, notokdependences=None, workdir=None, outdir=None, errdir=None):
         self.arguments = self.arguments.combine(local_arguments)
         msub_arguments = self.arguments.get("msub_arguments", [])
         if dependences is None:
@@ -260,7 +303,7 @@ class Pipeline:
             outdir = self.arguments.get("outdir", ".")
         if errdir is None:
             errdir = self.arguments.get("errdir", ".")
-        job = MJob.create_new(self, name, msub_arguments, dependences, workdir, outdir, errdir, self.arguments)
+        job = MJob.create_new(self, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, self.arguments)
         self.jobs.append(job)
         return job
 

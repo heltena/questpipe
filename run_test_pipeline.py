@@ -55,7 +55,7 @@ _, stdout, stderr = pipeline.run("""
 
 # STEP 2: Create fastq files
 t1 = pipeline.create_job(name="00_bcl2fastq")
-t1.async_run("""
+t1.prepare_async_run("""
     module load bcl2fastq/2.17.1.14
     # bcl2fastq -R {project_dir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
     """)
@@ -65,71 +65,80 @@ step3_tasks = []
 sample_sheet_filename = pipeline.parse_string("{illumina_csv_sheet}")
 ssr = SampleSheetLoader(sample_sheet_filename)
 for index, data in enumerate(ssr.data):
-    if data["Sample_Project"] == arguments.values["project_id"]:
-        tasks = []
-        fastq_filenames = []
-        for line in [1, 2, 3, 4]:
-            sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
-            fastq_filenames.append("{rundir}/02_trimmed/{sample_filename}.trimmed.fastq.gz")
-            current_t = pipeline.create_job(
-                name="01_fastqc_{sample_filename}", 
-                dependences=[t1],
-                local_arguments=Arguments(
-                    sample_id=data["Sample_ID"],
-                    sample_name=data["Sample_Name"],
-                    sample_filename=sample_filename))
+    if data["Sample_Project"] != arguments.values["project_id"]:
+        continue
 
-            current_t.async_run("""
-                module load fastqc/0.11.5
-                module load java
-                
-                cp {project_dir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
-                    {rundir}/00_fastq
-                fastqc -o {rundir}/01_fastqc {rundir}/00_fastq/{sample_filename}.fastq.gz
-                java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
-                    -threads {num_processors} \
-                    -phred33 {rundir}/00_fastq/{sample_filename}.fastq.gz \
-                    {rundir}/02_trimmed/{sample_filename}.trimmed.fastq \
-                    TRAILING:30 MINLEN:20 
-                gzip {rundir}/02_trimmed/{sample_filename}.trimmed.fastq
-                fastqc -o {rundir}/03_fastqc {rundir}/02_trimmed/{sample_filename}.trimmed.fastq.gz
-                """)
-            tasks.append(current_t)
-        
-        # Run tophat
-        tophat_t = pipeline.create_job(
-            name="02_tophat_{sample_name}",
-            dependences=tasks,
+    tasks = []
+    fastq_filenames = []
+    for line in [1, 2, 3, 4]:
+        sample_filename = "{}_S{}_L{:03}_R1_001".format(data["Sample_Name"], index+1, line)
+        fastq_filenames.append("{rundir}/02_trimmed/{sample_filename}.trimmed.fastq.gz")
+        current_t = pipeline.create_job(
+            name="01_fastqc_{sample_filename}", 
+            dependences=[t1],
             local_arguments=Arguments(
+                sample_id=data["Sample_ID"],
                 sample_name=data["Sample_Name"],
-                fastq_filenames=",".join(fastq_filenames)))
+                sample_filename=sample_filename))
 
-        tophat_t.async_run("""
-            module load tophat/2.1.0
-            module load samtools
-            module load bowtie2/2.2.6
-            module load boost
-            module load gcc/4.8.3
-            module load python
-
-        	tophat --no-novel-juncs \
-                --read-mismatches {tophat_read_mismatches} \
-                --read-edit-dist {tophat_read_edit_dist} \
-                --num-threads {num_processors} \
-                --max-multihits {tophat_max_multihits} \
-                --transcriptome-index {tophat_transcriptome_index} \
-                -o {rundir}/04_alignment/{sample_name} \
-                {tophat_bowtie_index} \
-                {fastq_filenames}
-            ln -s {rundir}/04_alignment/{sample_name}/accepted_hits.bam {rundir}/04_alignment/{sample_name}.bam
-            samtools index {rundir}/04_alignment/{sample_name}.bam
-            htseq-count -f bam -q -m intersection-nonempty \
-                -s reverse -t exon -i gene_id \
-                {rundir}/04_alignment/{sample_name}.bam \
-                {quantification_transcriptome_index} \
-                > {rundir}/04_alignment/{sample_name}.htseq.counts
+        current_t.async_run("""
+            module load fastqc/0.11.5
+            module load java
+            
+            cp {project_dir}/Data/Intensities/BaseCalls/{project_id}/{sample_id}/{sample_filename}.fastq.gz \
+                {rundir}/00_fastq
+            fastqc -o {rundir}/01_fastqc {rundir}/00_fastq/{sample_filename}.fastq.gz
+            java -jar /projects/b1038/tools/Trimmomatic-0.36/trimmomatic-0.36.jar SE \
+                -threads {num_processors} \
+                -phred33 {rundir}/00_fastq/{sample_filename}.fastq.gz \
+                {rundir}/02_trimmed/{sample_filename}.trimmed.fastq \
+                TRAILING:30 MINLEN:20 
+            gzip {rundir}/02_trimmed/{sample_filename}.trimmed.fastq
+            fastqc -o {rundir}/03_fastqc {rundir}/02_trimmed/{sample_filename}.trimmed.fastq.gz
             """)
-        step3_tasks.append(tophat_t)
+        tasks.append(current_t)
+    
+    file_test = " -a ".join(["-f {}".format(name) for name in fastq_filenames])
+
+    # Run tophat
+    tophat_t = pipeline.create_job(
+        name="02_tophat_{sample_name}",
+        dependences=tasks,
+        local_arguments=Arguments(
+            sample_name=data["Sample_Name"],
+            file_test=file_test,
+            fastq_filenames=",".join(fastq_filenames)))
+
+    tophat_t.async_run("""
+        module load tophat/2.1.0
+        module load samtools
+        module load bowtie2/2.2.6
+        module load boost
+        module load gcc/4.8.3
+        module load python
+
+        printf "Checking files {fastq_filenames}: "
+        until [ {file_test} ] ; do sleep 60 ; printf "." ; done
+        printf " found them.\n"
+
+        tophat --no-novel-juncs \
+            --read-mismatches {tophat_read_mismatches} \
+            --read-edit-dist {tophat_read_edit_dist} \
+            --num-threads {num_processors} \
+            --max-multihits {tophat_max_multihits} \
+            --transcriptome-index {tophat_transcriptome_index} \
+            -o {rundir}/04_alignment/{sample_name} \
+            {tophat_bowtie_index} \
+            {fastq_filenames}
+        ln -s {rundir}/04_alignment/{sample_name}/accepted_hits.bam {rundir}/04_alignment/{sample_name}.bam
+        samtools index {rundir}/04_alignment/{sample_name}.bam
+        htseq-count -f bam -q -m intersection-nonempty \
+            -s reverse -t exon -i gene_id \
+            {rundir}/04_alignment/{sample_name}.bam \
+            {quantification_transcriptome_index} \
+            > {rundir}/04_alignment/{sample_name}.htseq.counts
+        """)
+    step3_tasks.append(tophat_t)
 
 t4 = pipeline.create_job(
     name="03_alignment_report",
@@ -149,6 +158,8 @@ t5.async_run("""
         {quantification_transcriptome_index} \
         {rundir}/05_quantification
     """)
+
+t1.unhold()
 
 pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
 pipeline.close()
