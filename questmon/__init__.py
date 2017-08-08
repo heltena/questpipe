@@ -110,12 +110,12 @@ class MJob:
         eff_command = self.__parse_string(command)
         eff_msub_arguments = [self.__parse_string(arg) for arg in self.msub_arguments]
         if self.dependences is not None and len(self.dependences) > 0:
-            self.pipeline.log("dep: {}".format([job.moab_job_id for job in self.dependences]))
+            self.pipeline.log("I: dep: {}".format([job.moab_job_id for job in self.dependences]))
             for mjob in self.dependences:
                 if mjob.moab_job_id is None:
                     raise Exception("MJob must be running in order to be dependence")
             moab_job_ids = [mjob.moab_job_id for mjob in self.dependences]
-            eff_msub_arguments.append("-W depend=afterok:{}".format(":".join(moab_job_ids)))
+            eff_msub_arguments.append("-l depend=afterok:{}".format(":".join(moab_job_ids)))
 
         if self.notokdependences is not None and len(self.notokdependences) > 0:
             self.pipeline.log("notok dep: {}".format([job.moab_job_id for job in self.notokdependences]))
@@ -123,7 +123,7 @@ class MJob:
                 if mjob.moab_job_id is None:
                     raise Exception("MJob must be running in order to be not ok dependence")
             moab_job_ids = [mjob.moab_job_id for mjob in self.notokdependences]
-            eff_msub_arguments.append("-W depend=afternotok:{}".format(":".join(moab_job_ids)))
+            eff_msub_arguments.append("-l depend=afternotok:{}".format(":".join(moab_job_ids)))
 
         workdir = self.__parse_string(self.workdir)
         errdir = self.__parse_string(self.errdir)
@@ -149,7 +149,7 @@ class MJob:
         return self
 
     def unhold(self):
-        self.pipeline.log("I: cancelling {}".format(self.moab_job_id))
+        self.pipeline.log("I: unholding {}".format(self.moab_job_id))
         stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-u all", self.moab_job_id])
         result = len(stderr) == 0
         if result:

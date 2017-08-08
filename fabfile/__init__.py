@@ -42,3 +42,8 @@ def abort_pipeline(pipeline_name):
 def test():
     with settings(user=env.user), cd(env.questmon_folder):
         run("module load python/anaconda3.6 ; python3.6 test.py {}".format(""))
+
+@task
+def deps():
+    with settings(user=env.user), cd(env.questmon_folder):
+        run("module load python/anaconda3.6 ; python3.6 deps.py {}".format(""))

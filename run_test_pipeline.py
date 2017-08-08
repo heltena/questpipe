@@ -38,7 +38,7 @@ arguments = Arguments(
     errdir="{rundir}/logs/",
 )
 
-pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
+pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments, debug=True)
 
 # STEP 1: Create the folders to store the data
 _, stdout, stderr = pipeline.run("""
