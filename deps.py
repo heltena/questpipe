@@ -13,10 +13,11 @@ EXIT_VALUE = "Job exit value:"
 tests = [
     ("pipeline_20170808_094817.log", "result_20170808_094817.csv", expanduser("~/current_project/Result_20170808_094817/logs/")),  # This is bad (-w)
     ("pipeline_20170808_113245.log", "result_20170808_113245.csv", expanduser("~/current_project/Result_20170808_113245/logs/")),  # This is good (-l)
-    ("pipeline_20170808_162553.log", "result_20170808_162553.csv", expanduser("~/current_project/Result_20170808_162553/logs/"))   # This is bad, again (-w)
+    ("pipeline_20170808_162553.log", "result_20170808_162553.csv", expanduser("~/current_project/Result_20170808_162553/logs/")),  # This is bad, again (-w)
+    ("pipeline_20170808_180502.log", "result_20170808_180502.csv", expanduser("~/current_project/Result_20170808_180502/logs/"))   # This is good, again (-l)
     ]
 
-pipeline_filename, result_filename, result_path = tests[2]
+pipeline_filename, result_filename, result_path = tests[3]
 
 job_dependency = {}
 with open(pipeline_filename, "rt") as f:

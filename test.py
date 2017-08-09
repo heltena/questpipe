@@ -1,6 +1,8 @@
-from questmon import Arguments, Pipeline, SampleSheetLoader
+from questmon import Arguments, Pipeline
+from questmon.illumina import SampleSheetLoader
 from os.path import expanduser
 from datetime import datetime
+
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = "Result_{}".format(timestamp)
@@ -28,46 +30,6 @@ arguments = Arguments(
     errdir="{rundir}/logs",
 )
 
-pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments, debug=True)
-_, stdout, stderr = pipeline.run("""
-    mkdir -p "{rundir}"
-    mkdir -p "{rundir}/logs"
-    echo "hola"
-    """)
-
-t1 = pipeline.create_job(name="test")
-t1.prepare_async_run("""
-    echo "Start t1"
-    sleep 1
-    echo "Finished"
-    """)
-
-t2 = pipeline.create_job(name="lock", dependences=[t1])
-t2.async_run("""
-    echo "t2 is started"
-    sleep 0
-    echo "t2 finished"
-    """)
-
-tasks = []
-for i in range(3):
-    dependences = [t2] + tasks[-5:]
-    current_t = pipeline.create_job(name="test_{}".format(i), dependences=dependences)
-    current_t.async_run("""
-        echo "t_{job_name} is started"
-        sleep 10
-        echo "t_{job_name} finished"
-        """)
-    tasks.append(current_t)
-
-t3 = pipeline.create_job(name="final_task", dependences=tasks)
-t3.async_run("""
-    echo "t_{job_name} is started"
-    sleep 10
-    echo "t_{job_name} finished"
-    """)
-
-t1.unhold()
-
-pipeline.save_state(expanduser("~/pipeline_{}.json".format(timestamp)))
-pipeline.close()
+with Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments) as pipeline:
+    pipeline.debug_to_filename("{rundir}/pipeline.log", create_parent_folders=True)
+    pipeline.save_state("{rundir}/pipeline.json")

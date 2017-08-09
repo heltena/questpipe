@@ -1,5 +1,5 @@
-import csv
 import json
+import pathlib
 import re
 import subprocess
 
@@ -29,13 +29,11 @@ class Arguments:
         return self.values.__repr__()        
 
 
-class MJobStatus:
+class MJob:
     CREATED = 0
     RUNNING = 1
     COMPLETED = 2
 
-
-class MJob:
     def __init__(self, pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments, moab_job_name, moab_job_id, status, command):
         self.pipeline = pipeline
         self.name = name
@@ -53,7 +51,7 @@ class MJob:
 
     @staticmethod
     def create_new(pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments):
-        return MJob(pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments, None, None, MJobStatus.CREATED, None)
+        return MJob(pipeline, name, msub_arguments, dependences, notokdependences, workdir, outdir, errdir, arguments, None, None, MJob.CREATED, None)
 
     @staticmethod
     def from_json(pipeline, msub_arguments, data):
@@ -104,7 +102,7 @@ class MJob:
         self.__async_run(command, hold=False)
 
     def __async_run(self, command, hold):
-        if self.status != MJobStatus.CREATED:
+        if self.status != MJob.CREATED:
             raise Exception("MJob is running")
         self.command = command
         eff_command = self.__parse_string(command)
@@ -142,7 +140,7 @@ class MJob:
         if result:
             self.moab_job_name = stdout.decode('utf8').strip()
             self.moab_job_id = self.moab_job_name.split(".")[0]
-            self.status = MJobStatus.RUNNING
+            self.status = MJob.RUNNING
             self.pipeline.log("I: Running {}".format(self.moab_job_id))
         else:
             raise Exception("Cannot start job: {}".format(stderr))
@@ -153,26 +151,26 @@ class MJob:
         stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-u all", self.moab_job_id])
         result = len(stderr) == 0
         if result:
-            self.status = MJobStatus.RUNNING
+            self.status = MJob.RUNNING
             self.pipeline.log("I: Unhold {}".format(self.moab_job_id))
         else:
-            self.pipeline.log("E: Error: {}".format(stderr))
-            self.status = MJobStatus.CREATED       
+            self.pipeline.log("E: Error unholding job {}: {}".format(self.moab_job_id, stderr))
+            self.status = MJob.CREATED       
         
     def cancel(self):
         self.pipeline.log("I: cancelling {}".format(self.moab_job_id))
         stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-c", self.moab_job_id])
         result = len(stderr) == 0
         if result:
-            self.status = MJobStatus.COMPLETED
+            self.status = MJob.COMPLETED
             self.pipeline.log("I: Cancelled {}".format(self.moab_job_id))
         else:
-            self.pipeline.log("E: Error: {}".format(stderr))
-            self.status = MJobStatus.CREATED       
+            self.pipeline.log("E: Error cancelling job {}: {}".format(self.moab_job_id, stderr))
+            self.status = MJob.CREATED       
         
     @property
     def is_running(self):
-        if self.status in [MJobStatus.CREATED, MJobStatus.COMPLETED]:
+        if self.status in [MJob.CREATED, MJob.COMPLETED]:
             return False
         stdin, stdout, stderr = self.pipeline.exec_command("checkjob", ["-v {}".format(self.moab_job_id)])
         for line in stdout.splitlines():
@@ -187,7 +185,7 @@ class MJob:
                 continue
             param = line[index+1:].strip()
             if param == "Completed":
-                self.status = MJobStatus.COMPLETED
+                self.status = MJob.COMPLETED
                 return False
             else:
                 return True
@@ -195,16 +193,41 @@ class MJob:
 
 
 class Pipeline:
-    def __init__(self, name, join_command_arguments=False, arguments=None, debug=False):
+    def __init__(self, name, join_command_arguments=False, arguments=None, abort_jobs_on_exception=True):
         self.name = name
         self.join_command_arguments = join_command_arguments
         self.arguments = arguments if arguments is not None else Arguments({})
         self.jobs = []
-        self.debug = debug
+        self.debug_file = None
+        self.abort_jobs_on_exception = abort_jobs_on_exception
+
+    def debug_to_filename(self, filename, create_parent_folders=False):
+        if self.debug_file is not None:
+            raise Exception("Cannot debug to more than one file")
+        eff_filename = self.parse_string(filename)
+        if create_parent_folders:
+            parent = pathlib.Path(eff_filename).parent
+            parent.mkdir(parents=True, exist_ok=True)
+
+        self.debug_file = open(eff_filename, "wt")
 
     def log(self, str):
-        if self.debug:
-            print(str)
+        if self.debug_file is not None:
+            self.debug_file.write("{}\n".format(str))
+            self.debug_file.flush()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.debug_file is not None:
+            self.debug_file.close()
+        if exc_type is not None:
+            if self.abort_jobs_on_exception:
+                self.log("E: Aborting all the jobs (exception raised)")
+                self.abort()
+            return None
+        return self
 
     @staticmethod
     def load_state(filename):
@@ -235,16 +258,18 @@ class Pipeline:
             "jobs": [job.to_json() for job in self.jobs]}
 
     def save_state(self, filename):
-        with open(filename, "wt") as f:
+        eff_filename = self.parse_string(filename)
+        with open(eff_filename, "wt") as f:
             f.write(json.dumps(
                 self.to_json(), 
                 sort_keys=True, 
                 indent=4, 
                 separators=(',', ': ')))
+        return eff_filename
 
     def checkjobs(self):
         # If the job is not appearing on 'showq', it means, the job is done
-        job_states = {job.moab_job_id: MJobStatus.COMPLETED for job in self.jobs}  
+        job_states = {job.moab_job_id: MJob.COMPLETED for job in self.jobs}  
         p = subprocess.Popen("showq", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = p.communicate()
         for line in stdout.splitlines():
@@ -258,9 +283,9 @@ class Pipeline:
             if params[0] in job_states:
                 state = params[2].upper()
                 if state == "RUNNING":
-                    job_states[params[0]] = MJobStatus.RUNNING
+                    job_states[params[0]] = MJob.RUNNING
                 else:
-                    job_states[params[0]] = MJobStatus.CREATED
+                    job_states[params[0]] = MJob.CREATED
 
         count = {}
         for state in job_states.values():
@@ -268,10 +293,14 @@ class Pipeline:
         return count
 
     def abort(self):
-        job_states = {job.moab_job_id: MJobStatus.COMPLETED for job in self.jobs}  
+        job_states = {job.moab_job_id: MJob.COMPLETED for job in self.jobs}  
         for job in self.jobs:
             p = subprocess.Popen("mjobctl -c {}".format(job.moab_job_id), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             stdout, stderr = p.communicate()
+            if len(stdout) > 0:
+                self.log("I: abort says: {}".format(stdout))
+            if len(stderr) > 0:
+                self.log("E: abort failed: {}".format(stderr))
 
     def exec_command(self, command, command_arguments, input=None):
         if command_arguments is None:
@@ -321,81 +350,3 @@ class Pipeline:
         p = subprocess.Popen(eff_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = p.communicate()
         return None, stdout, stderr
-        
-    def close(self):
-        pass
-
-
-class SampleSheetLoader:
-    BEGIN = 0
-    HEADER = 1
-    READS = 2
-    SETTINGS = 3
-    DATA_HEADER = 4
-    DATA = 5
-
-    def __init__(self, filename):
-        state = SampleSheetLoader.BEGIN
-        headers = {}
-        reads = {}
-        settings = {}
-        data_header = []
-        data_values = []
-        with open(filename, "r") as f:
-            for params in csv.reader(f):
-                if params[0] == "[Header]":
-                    state = SampleSheetLoader.HEADER
-                    continue
-                if params[0] == "[Reads]":
-                    state = SampleSheetLoader.READS 
-                    continue
-                if params[0] == "[Settings]":
-                    state = SampleSheetLoader.SETTINGS 
-                    continue
-                if params[0] == "[Data]":
-                    state = SampleSheetLoader.DATA_HEADER
-                    continue
-                if state == SampleSheetLoader.HEADER:
-                    if len(params[0].strip()) > 0:
-                        headers[params[0]] = params[1:]
-                elif state == SampleSheetLoader.READS:
-                    if len(params[0].strip()) > 0:
-                        reads[params[0]] = params[1:]
-                elif state == SampleSheetLoader.SETTINGS:
-                    if len(params[0].strip()) > 0:
-                        settings[params[0]] = params[1:]
-                elif state == SampleSheetLoader.DATA_HEADER:
-                    data_header = params
-                    state = SampleSheetLoader.DATA
-                elif state == SampleSheetLoader.DATA:
-                    data_values.append(params)
-                else:
-                    print("Error!")
-        self.data_header = data_header
-        self.data_values = data_values
-        self.data = [dict(zip(self.data_header, values)) for values in self.data_values]
-    
-
-
-# class SSHShell:
-#     def __init__(self, host, username, key):
-#         self.client = paramiko.SSHClient()
-#         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#         self.client.connect(host, username=username, pkey=key)
-    
-#     def exec_command(self, command, arguments, input=None):
-#         arguments = " ".join(arguments)
-#         if input is None:
-#             eff_command = "{} {}".format(command, arguments)
-#             _, stdout, stderr = self.client.exec_command(eff_command)
-#             return _, stdout.read(), stderr.read()
-#         else:
-#             eff_command = "echo $'{}' | {} {}".format(input, command, arguments)
-#             _, stdout, stderr = self.client.exec_command(eff_command)
-#             return _, stdout.read(), stderr.read()
-
-#    def create_job(self, msub_arguments, dependences, command, workdir=None, outdir=None, errdir=None):
-#             raise NotImplemented()   
-
-#     def close(self):
-#         self.client.close()
