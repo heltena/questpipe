@@ -17,9 +17,10 @@ arguments = Arguments(
 )
 
 pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
+pipeline.debug_to_filename("{outdir}/pipeline.log", create_parent_folders=True)
 
 t1 = pipeline.create_job(name="first_task")
-t1.async_run("""
+t1.prepare_async_run("""
     sleep 5
     echo {job_name} >> sophia001
     """)
@@ -35,6 +36,7 @@ t3.async_run("""
     sleep 1
     echo {job_name} >> FINISHED
     """)
-    
-pipeline.save_state(expanduser("~/pipeline.json"))
-pipeline.close()
+
+t1.unhold()
+
+pipeline.save_state("{outdir}/pipeline.json")

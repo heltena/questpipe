@@ -19,14 +19,19 @@ def sync():
         rsync_project(local_dir=".", remote_dir=env.questmon_folder, exclude=[".git", "ssh_keys"])
     
 @task
+def get_sheetdata(index):
+    with settings(user=env.user), cd(env.questmon_folder):
+        run("module load python/anaconda3.6 ; python3.6 get_sheetdata.py {}".format(index))
+
+@task
 def run_kishore_pipeline():
     with settings(user=env.user), cd(env.questmon_folder):
         run("module load python/anaconda3.6 ; python3.6 run_kishore_pipeline.py")
 
 @task
-def run_pipeline_pool():
+def run_pipeline_pool(from_index, to_index):
     with settings(user=env.user), cd(env.questmon_folder):
-        run("module load python/anaconda3.6 ; python3.6 run_pipeline_pool.py")
+        run("module load python/anaconda3.6 ; python3.6 run_pipeline_pool.py {} {}".format(from_index, to_index))
 
 @task
 def checkjobs(pipeline_name):
@@ -41,7 +46,7 @@ def abort_pipeline(pipeline_name):
 @task
 def test():
     with settings(user=env.user), cd(env.questmon_folder):
-        run("module load python/anaconda3.6 ; python3.6 test.py {}".format(""))
+        run("module load python/anaconda3.6 ; python3.6 test.py")
 
 @task
 def deps():

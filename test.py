@@ -32,4 +32,18 @@ arguments = Arguments(
 
 with Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments) as pipeline:
     pipeline.debug_to_filename("{rundir}/pipeline.log", create_parent_folders=True)
+
+    t1 = pipeline.create_job(name="helio")
+    t1.prepare_async_run("""
+        echo "HOLA" >{rundir}/helio.txt
+        """)
+
+    t2 = pipeline.create_job(name="sophia", dependences=[t1])
+    t2.async_run("""
+        sleep 10
+        echo "ADIOS" >>{rundir}/helio.txt
+        """)
+
+    t1.unhold()
+    
     pipeline.save_state("{rundir}/pipeline.json")

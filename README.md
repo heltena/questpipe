@@ -18,31 +18,82 @@ Fabric accepts this global arguments:
 
 Fabric has this tasks:
 
-* load_quest: load the data to connect to the server. The parameter is the source of the 'questmon' folder.
-* git_pull: pull the code on the host you listed:
+* load_quest: loads the data to connect to the server. The parameter is the source of the 'questmon' folder.
+* sync: copies (rsync) the files changed on the loca folder to the questmon folder:
 
     `
-    fab -u <username> load_quest:~/src/questmon git_pull
+    fab -u <username> load_quest:~/src/questmon sync
     `
 
-* run_test_pipeline: run two jobs in parallel and another one when these finish.
+* run_pipeline_pool: runs pulrseq pipeline example.
 
     `
-    fab -u <username> load_quest:~/src/questmon run_test_pipeline
+    fab -u <username> load_quest:~/src/questmon run_pipeline_pool
     `
 
-* checkjobs: check if the jobs of the previous pipeline are completed.
+* checkjobs: checks if the jobs of the pipeline are completed.
 
     `
-    fab -u <username> load_quest:~/src/questmon checkjobs
+    fab -u <username> load_quest:~/src/questmon checkjobs:file_of_the_pipeline
+    `
+
+* abort_pipeline: aborts all the jobs of the pipeline:
+
+    `
+    fab -u <username> load_quest:~/src/questmon abort_pipeline:file_of_the_pipeline
     `
 
 Note: you can run two or more tasks in a single call:
 
-    `
-    fab -u <username> load_quest:~/src/questmon git_pull run_test_pipeline
-    `
+
+    fab -u <username> load_quest:~/src/questmon sync run_pipeline_pool
+
 
 ## Connection to Quest
 
 Fabric uses SSH Key to connect to quest. To do this, create or use a SSH key pair of your computer and copy the public key to your ~/.ssh/authorized_keys (see manual).
+
+## Examples of pipelines
+
+In order to run these examples, the Python code should be run on Quest. For example:
+
+    $ ssh user@quest.northwestern.edu
+    quest> $ module load python/anaconda3.6
+    quest> $ python example1.py
+
+As an alternative, Fabric can be used creating a task that runs the code below. In the fabric file:
+
+    @task
+    def our_task():
+        with settings(user=env.user), cd(env.questmon_folder):
+            run("module load python/anaconda3.6 ; python3.6 our_task_file.py")
+
+And then, using a console in our local terminal:
+
+    fab -u user load_quest:~/src/questmon sync our_task
+
+Run the task "sync" before running the "our_task" task is important. Otherwise, the previous code will be run instead of the current one.
+
+# Example 1: just a pipeline
+
+In this example, a pipeline is created using different parameters. It is not creating jobs:
+
+    from questmon import Arguments, Pipeline
+    from os.path import expanduser
+    from datetime import datetime
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_name = "Result_{}".format(timestamp)
+
+    arguments = Arguments(
+        run_name=run_name,
+
+        basedir=expanduser("~"),
+        project_name="example_test",
+        project_dir="{basedir}/{project_name}",
+        rundir="{project_dir}/{run_name}"
+    )
+
+    with Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments) as pipeline:
+        pipeline.debug_to_filename("{rundir}/pipeline.log", create_parent_folders=True)
+        pipeline.save_state("{rundir}/pipeline.json")

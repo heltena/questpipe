@@ -148,7 +148,7 @@ class MJob:
 
     def unhold(self):
         self.pipeline.log("I: unholding {}".format(self.moab_job_id))
-        stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-u all", self.moab_job_id])
+        stdin, stdout, stderr = self.pipeline.exec_command("mjobctl", ["-u", "all", self.moab_job_id])
         result = len(stderr) == 0
         if result:
             self.status = MJob.RUNNING
@@ -269,9 +269,19 @@ class Pipeline:
 
     def checkjobs(self):
         # If the job is not appearing on 'showq', it means, the job is done
-        job_states = {job.moab_job_id: MJob.COMPLETED for job in self.jobs}  
-        p = subprocess.Popen("showq", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        job_ids = [job.moab_job_id for job in self.jobs]
+
+        QUEUE_STATES = "HQTWS"
+        RUNNING_STATES = "R"
+
+        queue_count = 0
+        running_count = 0
+        completed_count = 0
+
+        p = subprocess.Popen("qstat", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = p.communicate()
+
+        is_header = True
         for line in stdout.splitlines():
             line = line.decode("utf8")
             if line.endswith('\n'):
@@ -279,18 +289,30 @@ class Pipeline:
             line = line.strip()
             if len(line) == 0:
                 continue
-            params = re.sub('\s+', ' ', line).split()
-            if params[0] in job_states:
-                state = params[2].upper()
-                if state == "RUNNING":
-                    job_states[params[0]] = MJob.RUNNING
-                else:
-                    job_states[params[0]] = MJob.CREATED
+            if is_header:
+                if re.match("^[- ]*$", line):
+                    is_header = False
+                continue
 
-        count = {}
-        for state in job_states.values():
-            count[state] = count.get(state, 0) + 1
-        return count
+            line = re.sub("\s+", " ", line)
+            params = line.split(" ")
+            if len(params) < 5:
+                continue
+            job_id = params[0].split(".")[0]
+            if job_id not in job_ids:
+                continue
+            state = params[4]
+    
+            if state in QUEUE_STATES:
+                queue_count += 1
+            elif state in RUNNING_STATES:
+                running_count += 1
+            else:
+                completed_count += 1
+
+        remain = len(job_ids) - (queue_count + running_count + completed_count)
+        completed_count += remain
+        return queue_count, running_count, completed_count
 
     def abort(self):
         job_states = {job.moab_job_id: MJob.COMPLETED for job in self.jobs}  

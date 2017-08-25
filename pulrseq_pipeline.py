@@ -24,7 +24,7 @@ def run_pipeline(name, arguments):
         t1 = pipeline.create_job(name="00_bcl2fastq")
         t1.prepare_async_run("""
             module load bcl2fastq/2.17.1.14
-            # bcl2fastq -R {project_dir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
+            bcl2fastq -R {project_dir} -r {num_processors} -d {num_processors} -p {num_processors} -w {num_processors}
             """)
 
         # STEP 3: Create the fastqc files from fastq
@@ -65,15 +65,12 @@ def run_pipeline(name, arguments):
                     """)
                 tasks.append(current_t)
             
-            file_test = " -a ".join(["-f {}".format(name) for name in fastq_filenames])
-
             # Run tophat
             tophat_t = pipeline.create_job(
                 name="02_tophat_{sample_name}",
                 dependences=tasks,
                 local_arguments=Arguments(
                     sample_name=data["Sample_Name"],
-                    file_test=file_test,
                     fastq_filenames=",".join(fastq_filenames)))
 
             tophat_t.async_run("""
@@ -83,10 +80,6 @@ def run_pipeline(name, arguments):
                 module load boost
                 module load gcc/4.8.3
                 module load python
-
-                printf "Checking files {fastq_filenames}: "
-                until [ {file_test} ] ; do sleep 60 ; printf "." ; done
-                printf " found them.\n"
 
                 tophat --no-novel-juncs \
                     --read-mismatches {tophat_read_mismatches} \
