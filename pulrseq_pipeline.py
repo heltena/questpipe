@@ -1,10 +1,10 @@
-from questmon import Arguments, Pipeline
-from questmon.illumina import SampleSheetLoader
+import questpipe as qp
+import questpipe.illumina as qpi
 import time
 
 
 def run_pipeline(name, arguments):
-    with Pipeline(name=name, join_command_arguments=True, arguments=arguments) as pipeline:
+    with qp.Pipeline(name=name, join_command_arguments=True, arguments=arguments) as pipeline:
         pipeline.debug_to_filename("{rundir}/pipeline.log", create_parent_folders=True)
 
         # STEP 1: Create the folders to store the data
@@ -30,7 +30,7 @@ def run_pipeline(name, arguments):
         # STEP 3: Create the fastqc files from fastq
         step3_tasks = []
         sample_sheet_filename = pipeline.parse_string("{illumina_csv_sheet}")
-        ssr = SampleSheetLoader(sample_sheet_filename)
+        ssr = qpi.SampleSheetLoader(sample_sheet_filename)
         for index, data in enumerate(ssr.data):
             if data["Sample_Project"] != arguments.values["project_id"]:
                 continue

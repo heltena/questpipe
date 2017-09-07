@@ -1,6 +1,6 @@
 from fabric.api import cd, env, task, local, run, settings
 from fabric.contrib.project import rsync_project
-from questmon import Pipeline
+import questpipe as qp
 
 import json
 
@@ -11,44 +11,44 @@ env.hosts = []
 def load_quest(src):
     env.hosts = ["quest.northwestern.edu"]
     env.environment = "quest"
-    env.questmon_folder = src
+    env.questpipe_folder = src
 
 @task
 def sync():
     with settings(user=env.user):
-        rsync_project(local_dir=".", remote_dir=env.questmon_folder, exclude=[".git", "ssh_keys"])
+        rsync_project(local_dir=".", remote_dir=env.questpipe_folder, exclude=[".git", "ssh_keys"])
     
 @task
 def get_sheetdata(index):
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 get_sheetdata.py {}".format(index))
 
 @task
 def run_kishore_pipeline():
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 run_kishore_pipeline.py")
 
 @task
 def run_pipeline_pool(from_index, to_index):
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 run_pipeline_pool.py {} {}".format(from_index, to_index))
 
 @task
 def checkjobs(pipeline_name):
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 checkjobs.py {}".format(pipeline_name))
 
 @task
 def abort_pipeline(pipeline_name):
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 abort_pipeline.py {}".format(pipeline_name))
 
 @task
 def test():
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 test.py")
 
 @task
 def deps():
-    with settings(user=env.user), cd(env.questmon_folder):
+    with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 deps.py {}".format(""))

@@ -1,8 +1,8 @@
-from questmon import Arguments, Pipeline
+import questpipe as qp
 from os.path import expanduser
 
 
-arguments = Arguments(
+arguments = qp.Arguments(
     msub_arguments=[
         "-A b1042",
         "-q pulrseq",
@@ -16,7 +16,7 @@ arguments = Arguments(
     errdir=expanduser("~")
 )
 
-pipeline = Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
+pipeline = qp.Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments)
 pipeline.debug_to_filename("{outdir}/pipeline.log", create_parent_folders=True)
 
 t1 = pipeline.create_job(name="first_task")

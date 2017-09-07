@@ -95,13 +95,13 @@ class MJob:
                 return new_value
         raise Exception("recursive parsing")
 
-    def prepare_async_run(self, command):
-        self.__async_run(command, hold=True)
+    def prepare_async_run(self, command, NUMBER_OF_ATTEMPTS=3):
+        self.__async_run(command, hold=True, NUMBER_OF_ATTEMPTS=NUMBER_OF_ATTEMPTS)
 
-    def async_run(self, command):
-        self.__async_run(command, hold=False)
+    def async_run(self, command, NUMBER_OF_ATTEMPTS=3):
+        self.__async_run(command, hold=False, NUMBER_OF_ATTEMPTS=NUMBER_OF_ATTEMPTS)
 
-    def __async_run(self, command, hold):
+    def __async_run(self, command, hold, NUMBER_OF_ATTEMPTS=3):
         if self.status != MJob.CREATED:
             raise Exception("MJob is running")
         self.command = command
@@ -116,7 +116,7 @@ class MJob:
             eff_msub_arguments.append("-l depend=afterok:{}".format(":".join(moab_job_ids)))
 
         if self.notokdependences is not None and len(self.notokdependences) > 0:
-            self.pipeline.log("notok dep: {}".format([job.moab_job_id for job in self.notokdependences]))
+            self.pipeline.log("I: notok dep: {}".format([job.moab_job_id for job in self.notokdependences]))
             for mjob in self.notokdependences:
                 if mjob.moab_job_id is None:
                     raise Exception("MJob must be running in order to be not ok dependence")
@@ -133,17 +133,20 @@ class MJob:
         
         if hold:
             eff_msub_arguments.append("-h")
-
-        self.pipeline.log("I: msub {}".format(eff_msub_arguments))
-        stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=eff_command)
-        result = len(stderr) == 0
-        if result:
-            self.moab_job_name = stdout.decode('utf8').strip()
-            self.moab_job_id = self.moab_job_name.split(".")[0]
-            self.status = MJob.RUNNING
-            self.pipeline.log("I: Running {}".format(self.moab_job_id))
+    
+        for i in range(NUMBER_OF_ATTEMPTS):
+            self.pipeline.log("I: msub attempt {}: {}".format(i + 1, eff_msub_arguments))
+            stdin, stdout, stderr = self.pipeline.exec_command("msub", eff_msub_arguments, input=eff_command)
+            result = len(stderr) == 0
+            if result:
+                self.moab_job_name = stdout.decode('utf8').strip()
+                self.moab_job_id = self.moab_job_name.split(".")[0]
+                self.status = MJob.RUNNING
+                self.pipeline.log("I: Running {}".format(self.moab_job_id))
+                break
         else:
-            raise Exception("Cannot start job: {}".format(stderr))
+            # when for exit is not because break
+            raise Exception("Cannot start job after {} attemps: {}".format(NUMBER_OF_ATTEMPTS, stderr))
         return self
 
     def unhold(self):

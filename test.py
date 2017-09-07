@@ -1,5 +1,5 @@
-from questmon import Arguments, Pipeline
-from questmon.illumina import SampleSheetLoader
+import questpipe as qp
+import questpipe.illumina as qpi
 from os.path import expanduser
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from datetime import datetime
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 run_name = "Result_{}".format(timestamp)
 
-arguments = Arguments(
+arguments = qp.Arguments(
     num_processors=10,
     run_name=run_name,
 
@@ -30,7 +30,7 @@ arguments = Arguments(
     errdir="{rundir}/logs",
 )
 
-with Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments) as pipeline:
+with qp.Pipeline(name="mypipeline", join_command_arguments=True, arguments=arguments) as pipeline:
     pipeline.debug_to_filename("{rundir}/pipeline.log", create_parent_folders=True)
 
     t1 = pipeline.create_job(name="helio")
