@@ -116,6 +116,7 @@ def run_pipeline(name, arguments):
             perl /projects/p20742/tools/makeHTseqCountsTable.pl {rundir}/04_alignment \
                 {quantification_transcriptome_index} \
                 {rundir}/05_quantification
+            rm -f {project_dir}/latest
             ln -s {rundir} {project_dir}/latest
             """)
 

@@ -19,14 +19,9 @@ def sync():
         rsync_project(local_dir=".", remote_dir=env.questpipe_folder, exclude=[".git", "ssh_keys"])
     
 @task
-def get_sheetdata(index):
+def run_test_pipeline():
     with settings(user=env.user), cd(env.questpipe_folder):
-        run("module load python/anaconda3.6 ; python3.6 get_sheetdata.py {}".format(index))
-
-@task
-def run_kishore_pipeline():
-    with settings(user=env.user), cd(env.questpipe_folder):
-        run("module load python/anaconda3.6 ; python3.6 run_kishore_pipeline.py")
+        run("module load python/anaconda3.6 ; python3.6 run_test_pipeline.py")
 
 @task
 def run_pipeline_pool(from_index, to_index):
@@ -42,13 +37,3 @@ def checkjobs(pipeline_name):
 def abort_pipeline(pipeline_name):
     with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 abort_pipeline.py {}".format(pipeline_name))
-
-@task
-def test():
-    with settings(user=env.user), cd(env.questpipe_folder):
-        run("module load python/anaconda3.6 ; python3.6 test.py")
-
-@task
-def deps():
-    with settings(user=env.user), cd(env.questpipe_folder):
-        run("module load python/anaconda3.6 ; python3.6 deps.py {}".format(""))
