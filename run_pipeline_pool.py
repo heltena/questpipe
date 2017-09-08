@@ -1,7 +1,7 @@
 from datetime import datetime
 import questpipe as qp 
 import questpipe.illumina as qpi
-import questpipe.helpers import qph
+import questpipe.helpers as qph
 from pulrseq_pipeline import run_pipeline
 
 import sys
