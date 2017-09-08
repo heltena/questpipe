@@ -43,7 +43,7 @@ def run_pipeline(name, arguments):
                 current_t = pipeline.create_job(
                     name="01_fastqc_{sample_filename}", 
                     dependences=[t1],
-                    local_arguments=Arguments(
+                    local_arguments=qp.Arguments(
                         sample_id=data["Sample_ID"],
                         sample_name=data["Sample_Name"],
                         sample_filename=sample_filename))
@@ -69,7 +69,7 @@ def run_pipeline(name, arguments):
             tophat_t = pipeline.create_job(
                 name="02_tophat_{sample_name}",
                 dependences=tasks,
-                local_arguments=Arguments(
+                local_arguments=qp.Arguments(
                     sample_name=data["Sample_Name"],
                     fastq_filenames=",".join(fastq_filenames)))
 

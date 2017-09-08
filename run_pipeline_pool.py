@@ -1,7 +1,7 @@
 from datetime import datetime
 import questpipe as qp 
 import questpipe.illumina as qpi
-import questpipe.helpers import qph
+import questpipe.helpers as qph
 from pulrseq_pipeline import run_pipeline
 
 import sys
@@ -91,9 +91,9 @@ for project_name, project_id in projects[from_index:to_index]:
     while len(waiting_list) >= MAX_PIPELINES:
         current = waiting_list.pop(0)
         print("Waiting for project {}...".format(current))
-        wait_for_pipeline(current)
+        qph.wait_for_pipeline(current)
 
 while len(waiting_list) > 0:
     current = waiting_list.pop(0)
     print("Waiting for project {}...".format(current))
-    wait_for_pipeline(current)
+    qph.wait_for_pipeline(current)
