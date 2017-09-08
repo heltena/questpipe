@@ -43,7 +43,7 @@ def run_pipeline(name, arguments):
                 current_t = pipeline.create_job(
                     name="01_fastqc_{sample_filename}", 
                     dependences=[t1],
-                    local_arguments=Arguments(
+                    local_arguments=qp.Arguments(
                         sample_id=data["Sample_ID"],
                         sample_name=data["Sample_Name"],
                         sample_filename=sample_filename))
