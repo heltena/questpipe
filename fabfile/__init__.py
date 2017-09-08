@@ -24,6 +24,11 @@ def run_test_pipeline():
         run("module load python/anaconda3.6 ; python3.6 run_test_pipeline.py")
 
 @task
+def run_sophia_pipeline():
+    with settings(user=env.user), cd(env.questpipe_folder):
+        run("module load python/anaconda3.6 ; python3.6 run_sophia_pipeline.py")
+
+@task
 def run_pipeline_pool(from_index, to_index):
     with settings(user=env.user), cd(env.questpipe_folder):
         run("module load python/anaconda3.6 ; python3.6 run_pipeline_pool.py {} {}".format(from_index, to_index))
